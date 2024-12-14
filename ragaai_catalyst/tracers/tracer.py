@@ -19,6 +19,7 @@ from .instrumentators import (
 from .utils import get_unique_key
 # from .llamaindex_callback import LlamaIndexTracer
 from ..ragaai_catalyst import RagaAICatalyst
+from .agentic_tracing.agentic_tracing import AgenticTracing
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,8 @@ class Tracer:
             from .llamaindex_callback import LlamaIndexTracer
 
         else:
-            raise ValueError (f"Currently supported tracer types are 'langchain' and 'llamaindex'.")
+            self._upload_task = None
+            # raise ValueError (f"Currently supported tracer types are 'langchain' and 'llamaindex'.")
 
     def _improve_metadata(self, metadata, tracer_type):
         if metadata is None:
@@ -157,6 +159,8 @@ class Tracer:
         elif self.tracer_type == "llamaindex":
             from .llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer(self._pass_user_data()).start()
+        else:
+            AgenticTracing(self._pass_user_data()).start()
             
 
     def stop(self):
@@ -173,6 +177,8 @@ class Tracer:
         elif self.tracer_type == "llamaindex":
             from .llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer().stop()
+        else:
+            AgenticTracing().stop()
 
     def get_upload_status(self):
         """Check the status of the trace upload."""
