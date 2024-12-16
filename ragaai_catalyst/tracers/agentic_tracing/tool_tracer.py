@@ -1,213 +1,227 @@
-import asyncio
-import psutil
-import json
 import functools
+import uuid
 from datetime import datetime
-from .network_tracer import NetworkTracer, patch_aiohttp_trace_config
-from .user_interaction_tracer import UserInteractionTracer
-from .data import ToolCallModel
-from functools import wraps
-
+import psutil
+from typing import Optional, Any, Dict, List
+import contextvars
+import asyncio
 
 class ToolTracerMixin:
-    def trace_tool(self, name: str, description: str = ""):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
+        self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
+        self.component_network_calls = {}
+
+    def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
         def decorator(func):
+            # Check if the function is async
+            is_async = asyncio.iscoroutinefunction(func)
+
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
-                return await self._trace_tool_call_async(
-                    func, name, description, *args, **kwargs
+                return await self._trace_tool_execution(
+                    func, name, tool_type, version, *args, **kwargs
                 )
 
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
-                return self._trace_tool_call_sync(
-                    func, name, description, *args, **kwargs
+                return self._trace_sync_tool_execution(
+                    func, name, tool_type, version, *args, **kwargs
                 )
 
-            return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+            return async_wrapper if is_async else sync_wrapper
 
         return decorator
 
-    def _trace_tool_call_sync(self, func, name, description, *args, **kwargs):
+    def _trace_sync_tool_execution(self, func, name, tool_type, version, *args, **kwargs):
+        """Synchronous version of tool tracing"""
+        if not self.is_active:
+            return func(*args, **kwargs)
+
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
-        agent_id = self.current_agent_id.get()
+        component_id = str(uuid.uuid4())
+        hash_id = str(uuid.uuid4())
+
+        # Start tracking network calls for this component
+        self.start_component(component_id)
 
         try:
+            # Execute the tool
             result = func(*args, **kwargs)
 
+            # Calculate resource usage
             end_time = datetime.now()
             end_memory = psutil.Process().memory_info().rss
-            memory_used = end_memory - start_memory
+            memory_used = max(0, end_memory - start_memory)
 
-            serialized_params = self._serialize_params(args, kwargs)
-            tool_call = ToolCallModel(
-                project_id=self.project_id,
-                trace_id=self.trace_id,
-                agent_id=agent_id,
+            # End tracking network calls for this component
+            self.end_component(component_id)
+
+            # Create tool component
+            tool_component = self.create_tool_component(
+                component_id=component_id,
+                hash_id=hash_id,
                 name=name,
-                input_parameters=json.dumps(serialized_params),
-                output=str(result),
+                tool_type=tool_type,
+                version=version,
+                memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                duration=(end_time - start_time).total_seconds(),
-                memory_used=memory_used,
-            )
-            with self.Session() as session:
-                session.add(tool_call)
-                session.commit()
-                tool_call_id = tool_call.id
-
-            # Append tool_call_id to current_tool_call_ids
-            tool_call_ids = self.current_tool_call_ids.get()
-            if tool_call_ids is None:
-                tool_call_ids = []
-                self.current_tool_call_ids.set(tool_call_ids)
-            tool_call_ids.append(tool_call_id)
-
-            serialized_params = self._serialize_params(args, kwargs)
-            self.trace_data.setdefault("tool_calls", []).append(
-                {
-                    "id": tool_call_id,
-                    "name": name,
-                    "description": description,
-                    "input_parameters": (json.dumps(serialized_params)),
-                    "output": str(result),
-                    "start_time": start_time.isoformat(),
-                    "end_time": end_time.isoformat(),
-                    "duration": (end_time - start_time).total_seconds(),
-                    "memory_used": memory_used,
-                    "agent_id": agent_id,
-                }
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=self._sanitize_output(result)
             )
 
+            self.add_component(tool_component)
             return result
+
         except Exception as e:
-            self._log_error(e, "tool", name)
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            # End tracking network calls for this component
+            self.end_component(component_id)
+            
+            tool_component = self.create_tool_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                tool_type=tool_type,
+                version=version,
+                memory_used=0,
+                start_time=start_time,
+                end_time=datetime.now(),
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=None,
+                error=error_component
+            )
+
+            self.add_component(tool_component)
             raise
 
-    async def _trace_tool_call_async(self, func, name, description, *args, **kwargs):
+    async def _trace_tool_execution(self, func, name, tool_type, version, *args, **kwargs):
+        """Asynchronous version of tool tracing"""
+        if not self.is_active:
+            return await func(*args, **kwargs)
+
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
-        agent_id = self.current_agent_id.get()
-
-        # Initialize the UserInteractionTracer
-        user_interaction_tracer = UserInteractionTracer(self)
+        component_id = str(uuid.uuid4())
+        hash_id = str(uuid.uuid4())
 
         try:
-            async with user_interaction_tracer.async_capture():
-                if asyncio.iscoroutinefunction(func):
-                    trace_config = await patch_aiohttp_trace_config(self.network_tracer)
-                    result = await func(*args, **kwargs, trace_config=trace_config)
-                else:
-                    result = await asyncio.to_thread(func, *args, **kwargs)
+            # Execute the tool
+            result = await func(*args, **kwargs)
 
+            # Calculate resource usage
             end_time = datetime.now()
             end_memory = psutil.Process().memory_info().rss
-            memory_used = end_memory - start_memory
+            memory_used = max(0, end_memory - start_memory)
 
-            serialized_params = self._serialize_params(args, kwargs)
-            tool_call = ToolCallModel(
-                project_id=self.project_id,
-                trace_id=self.trace_id,
-                agent_id=agent_id,
+            # Create tool component
+            tool_component = self.create_tool_component(
+                component_id=component_id,
+                hash_id=hash_id,
                 name=name,
-                input_parameters=json.dumps(serialized_params),
-                output=str(result),
+                tool_type=tool_type,
+                version=version,
                 start_time=start_time,
                 end_time=end_time,
-                duration=(end_time - start_time).total_seconds(),
                 memory_used=memory_used,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=self._sanitize_output(result)
             )
-            with self.Session() as session:
-                session.add(tool_call)
-                session.commit()
-                tool_call_id = tool_call.id
 
-            # Append tool_call_id to current_tool_call_ids if available
-            tool_call_ids = self.current_tool_call_ids.get(None)
-            if tool_call_ids is not None:
-                tool_call_ids.append(tool_call_id)
-
-            tool_call_data = {
-                "name": name,
-                "description": description,
-                "input_parameters": json.dumps(args) if args else json.dumps(kwargs),
-                "output": str(result),
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "duration": (end_time - start_time).total_seconds(),
-                "memory_used": memory_used,
-                "network_calls": self.network_tracer.network_calls,
-                "agent_id": agent_id,
-                "tool_call_id": tool_call_id,
-            }
-
-            self.trace_data["tool_calls"].append(tool_call_data)
-
+            self.add_component(tool_component)
             return result
+
         except Exception as e:
-            self._log_error(e, "tool", name)
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            tool_component = self.create_tool_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                tool_type=tool_type,
+                version=version,
+                start_time=start_time,
+                end_time=datetime.now(),
+                memory_used=0,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=None,
+                error=error_component
+            )
+
+            self.add_component(tool_component)
             raise
-        finally:
-            self.network_tracer.deactivate_patches()  # Deactivate patches after execution
 
-    def _serialize_params(self, args, kwargs):
-        def _serialize(obj):
-            if isinstance(obj, (str, int, float, bool, type(None))):
-                return obj
-            elif isinstance(obj, (list, tuple)):
-                return [_serialize(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {str(k): _serialize(v) for k, v in obj.items()}
-            else:
-                return str(obj)
+    def create_tool_component(self, **kwargs):
+        """Create a tool component according to the data structure"""
+        start_time = kwargs["start_time"]
+        component = {
+            "id": kwargs["component_id"],
+            "hash_id": kwargs["hash_id"],
+            "source_hash_id": None,
+            "type": "tool",
+            "name": kwargs["name"],
+            "start_time": start_time.isoformat(),
+            "end_time": kwargs["end_time"].isoformat(),
+            "error": kwargs.get("error"),
+            "parent_id": self.current_agent_id.get(),
+            "info": {
+                "tool_type": kwargs["tool_type"],
+                "version": kwargs["version"],
+                "memory_used": kwargs["memory_used"]
+            },
+            "data": {
+                "input": kwargs["input_data"],
+                "output": kwargs["output_data"],
+                "memory_used": kwargs["memory_used"]
+            },
+            "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
+            "interactions": [{
+                "id": f"int_{uuid.uuid4()}",
+                "interaction_type": "input",
+                "timestamp": start_time.isoformat(),
+                "content": kwargs["input_data"]
+            }, {
+                "id": f"int_{uuid.uuid4()}",
+                "interaction_type": "output",
+                "timestamp": kwargs["end_time"].isoformat(),
+                "content": kwargs["output_data"]
+            }]
+        }
 
-        # Handle 'self' argument for class methods
-        if args and isinstance(args[0], object) and hasattr(args[0], "__dict__"):
-            args = ("self (instance)",) + args[1:]
+        return component
 
-        serialized_args = {f"arg_{i}": _serialize(arg) for i, arg in enumerate(args)}
-        serialized_kwargs = {k: _serialize(v) for k, v in kwargs.items()}
-        return {**serialized_args, **serialized_kwargs}
+    def start_component(self, component_id):
+        self.component_network_calls[component_id] = []
 
-    def wrap_langchain_tool(self, tool_input, tool_name=None, **tool_kwargs):
-        try:
-            from langchain.tools import Tool as LangChainTool
-            from langchain.tools.base import BaseTool
-        except ImportError as exc:
-            raise ImportError(
-                "LangChain is not installed. Please install it using: "
-                "pip install agentneo[langchain]"
-            ) from exc
+    def end_component(self, component_id):
+        pass
 
-        # Check if tool_input is already an instance
-        if isinstance(tool_input, BaseTool):
-            tool_instance = tool_input
-        else:
-            # Assume it's a class and try to instantiate it
-            tool_instance = tool_input(**tool_kwargs)
+    def _sanitize_input(self, args: tuple, kwargs: dict) -> Dict:
+        """Sanitize and format input data"""
+        return {
+            "args": [str(arg) if not isinstance(arg, (int, float, bool, str, list, dict)) else arg for arg in args],
+            "kwargs": {
+                k: str(v) if not isinstance(v, (int, float, bool, str, list, dict)) else v 
+                for k, v in kwargs.items()
+            }
+        }
 
-        # Get the name, prioritizing the provided tool_name
-        if tool_name:
-            name = tool_name
-        elif hasattr(tool_instance, "name"):
-            name = tool_instance.name
-        elif hasattr(tool_input, "__name__"):
-            name = tool_input.__name__
-        else:
-            name = type(tool_instance).__name__
-
-        @self.trace_tool(name)
-        @wraps(getattr(tool_instance, "invoke", tool_instance))
-        def wrapped_tool(tool_input, **kwargs):
-            if hasattr(tool_instance, "invoke"):
-                return tool_instance.invoke(tool_input, **kwargs)
-            else:
-                return tool_instance(tool_input, **kwargs)
-
-        return LangChainTool(
-            name=name,
-            func=wrapped_tool,
-            description=getattr(tool_instance, "description", ""),
-        )
+    def _sanitize_output(self, output: Any) -> Any:
+        """Sanitize and format output data"""
+        if isinstance(output, (int, float, bool, str, list, dict)):
+            return output
+        return str(output)

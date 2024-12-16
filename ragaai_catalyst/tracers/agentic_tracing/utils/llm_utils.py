@@ -1,4 +1,4 @@
-from ..data import LLMCall
+from .data_classes import LLMCall
 from .trace_utils import (
     calculate_cost,
     convert_usage_to_dict,
@@ -6,17 +6,18 @@ from .trace_utils import (
 )
 from importlib import resources
 import json
+import os
 
 
 # Load the Json configuration
 try:
-    with open("/Users/siddharthakosti/Downloads/catalyst_error_handling/catalyst_v2/catalyst_v2_new_1/ragaai-catalyst/ragaai_catalyst/tracers/agentic_tracing/configs/model_costs.json", "r") as file:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_costs_path = os.path.join(current_dir, "model_costs.json")
+    with open(model_costs_path, "r") as file:
         config = json.load(file)
 except FileNotFoundError:
-    # with resources.open_text("agentneo", "configs/model_costs.json") as file:
-    #     config = json.load(file)
     from importlib.resources import files
-    with (files("agentneo.configs") / "model_costs.json").open("r") as file:
+    with (files("") / "model_costs.json").open("r") as file:
         config = json.load(file)
 
 

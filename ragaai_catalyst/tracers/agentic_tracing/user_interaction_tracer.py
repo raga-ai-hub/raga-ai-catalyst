@@ -2,7 +2,7 @@ import builtins
 from contextlib import contextmanager, asynccontextmanager
 from datetime import datetime
 
-from .data import UserInteractionModel
+from ..data import UserInteractionModel
 
 
 class UserInteractionTracer:

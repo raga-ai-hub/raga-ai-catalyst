@@ -4,6 +4,7 @@ from http.client import HTTPConnection, HTTPSConnection
 import aiohttp
 import requests
 import urllib
+import uuid
 
 
 class NetworkTracer:
@@ -33,21 +34,34 @@ class NetworkTracer:
         duration = (
             (end_time - start_time).total_seconds() if start_time and end_time else None
         )
+        
+        # Calculate bytes sent/received from headers and body
+        bytes_sent = len(str(request_headers or "")) + len(str(request_body or ""))
+        bytes_received = len(str(response_headers or "")) + len(str(response_body or ""))
+        
+        # Extract protocol from URL
+        protocol = "https" if url.startswith("https") else "http"
+        
         self.network_calls.append(
             {
-                "method": method,
                 "url": url,
+                "method": method,
                 "status_code": status_code,
+                "response_time": duration,
+                "bytes_sent": bytes_sent,
+                "bytes_received": bytes_received,
+                "protocol": protocol,
+                "connection_id": str(uuid.uuid4()),  # Generate unique connection ID
+                "parent_id": None,  # Will be set by the component
+                "request": {
+                    "headers": request_headers,
+                    "body": request_body[:1000] if request_body else None,  # Limit to 1000 chars
+                },
+                "response": {
+                    "headers": response_headers,
+                    "body": response_body[:1000] if response_body else None,  # Limit to 1000 chars
+                },
                 "error": str(error) if error else None,
-                "start_time": start_time.isoformat() if start_time else None,
-                "end_time": end_time.isoformat() if end_time else None,
-                "duration": duration,
-                "request_headers": request_headers,
-                "response_headers": response_headers,
-                "request_body": request_body,
-                "response_body": (
-                    response_body[:1000] if response_body else None
-                ),  # Limit response body to 1000 characters
             }
         )
 

@@ -1,219 +1,307 @@
-import asyncio
-import psutil
-import json
 import functools
+import uuid
 from datetime import datetime
-from .user_interaction_tracer import UserInteractionTracer
-from .data import AgentCallModel, ToolCallModel, LLMCallModel, UserInteractionModel
-import pdb
-
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
+import psutil
+from typing import Optional, Any, Dict, List
+import contextvars
+import asyncio
 
 class AgentTracerMixin:
-    def trace_agent(self, name: str):
-        def decorator(func_or_class):
-            if isinstance(func_or_class, type):
-                # If it's a class, wrap all its methods as tools
-                for attr_name, attr_value in func_or_class.__dict__.items():
-                    if callable(attr_value) and not attr_name.startswith("__"):
-                        setattr(
-                            func_or_class,
-                            attr_name,
-                            self.trace_tool(f"{name}.{attr_name}")(attr_value),
-                        )
-                # Wrap the class initialization
-                original_init = func_or_class.__init__
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_agent_id = contextvars.ContextVar("agent_id", default=None)
+        self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
+        self.agent_children = contextvars.ContextVar("agent_children", default=[])
+        self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
 
-                @functools.wraps(original_init)
-                def wrapped_init(self_instance, *args, **kwargs):
-                    self_instance._agent_name = name
-                    self_instance._agent_start_time = datetime.now()
-                    self_instance._agent_start_memory = (
-                        psutil.Process().memory_info().rss
-                    )
-                    self_instance._agent_tracer = (
-                        self  # Use the current tracer instance
-                    )
+    def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
+        def decorator(func):
+            # Check if the function is async
+            is_async = asyncio.iscoroutinefunction(func)
 
-                    self_instance._agent_id = self._start_agent_call(name, args, kwargs)
-                    self.current_agent_id.set(self_instance._agent_id)
-                    original_init(self_instance, *args, **kwargs)
-
-                func_or_class.__init__ = wrapped_init
-
-                # Wrap the class destruction
-                original_del = (
-                    func_or_class.__del__ if hasattr(func_or_class, "__del__") else None
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await self._trace_agent_execution(
+                    func, name, agent_type, version, capabilities, *args, **kwargs
                 )
 
-                def wrapped_del(self_instance):
-                    if hasattr(self_instance, "_agent_name"):
-                        try:
-                            self._end_agent_call(self_instance._agent_id)
-                        except Exception as e:
-                            logging.error(f"Error finalizing agent call: {e}")
-                    if original_del:
-                        original_del(self_instance)
-
-                func_or_class.__del__ = wrapped_del
-
-                return func_or_class
-            else:
-
-                @functools.wraps(func_or_class)
-                async def async_wrapper(*args, **kwargs):
-                    return await self._trace_agent_call_async(
-                        func_or_class, name, *args, **kwargs
-                    )
-
-                @functools.wraps(func_or_class)
-                def sync_wrapper(*args, **kwargs):
-                    return self._trace_agent_call_sync(
-                        func_or_class, name, *args, **kwargs
-                    )
-
-                return (
-                    async_wrapper
-                    if asyncio.iscoroutinefunction(func_or_class)
-                    else sync_wrapper
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                return self._trace_sync_agent_execution(
+                    func, name, agent_type, version, capabilities, *args, **kwargs
                 )
+
+            return async_wrapper if is_async else sync_wrapper
 
         return decorator
 
-    def _start_agent_call(self, name, args, kwargs):
+    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+        """Synchronous version of agent tracing"""
+        if not self.is_active:
+            return func(*args, **kwargs)
+
         start_time = datetime.now()
-        agent_call = AgentCallModel(
-            project_id=self.project_id,
-            trace_id=self.trace_id,
-            name=name,
-            start_time=start_time,
-            llm_call_ids=json.dumps([]),
-            tool_call_ids=json.dumps([]),
-            user_interaction_ids=json.dumps([]),
-        )
-        with self.Session() as session:
-            session.add(agent_call)
-            session.commit()
-            return agent_call.id
+        start_memory = psutil.Process().memory_info().rss
+        component_id = str(uuid.uuid4())
+        hash_id = str(uuid.uuid4())
 
-    def _end_agent_call(self, agent_id):
-        with self.Session() as session:
-            agent_call = session.query(AgentCallModel).get(agent_id)
-            if agent_call:
-                agent_call.end_time = datetime.now()
-                agent_call.llm_call_ids = json.dumps(
-                    self.current_llm_call_ids.get() or []
-                )
-                agent_call.tool_call_ids = json.dumps(
-                    self.current_tool_call_ids.get() or []
-                )
-                agent_call.user_interaction_ids = json.dumps(
-                    self.current_user_interaction_ids.get() or []
-                )
+        # Initialize empty children list for this agent
+        children_token = self.agent_children.set([])
+        
+        # Set the current agent context
+        agent_token = self.current_agent_id.set(component_id)
+        agent_name_token = self.current_agent_name.set(name)
 
-                try:
-                    session.add(agent_call)
-                    session.commit()
-                    logger.debug(
-                        f"Successfully updated and committed AgentCallModel with id {agent_id}"
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Error committing AgentCallModel with id {agent_id}: {str(e)}"
-                    )
-                    session.rollback()
-
-                self.trace_data.setdefault("agent_calls", []).append(
-                    {
-                        "id": agent_call.id,
-                        "name": agent_call.name,
-                        "start_time": agent_call.start_time,
-                        "end_time": agent_call.end_time,
-                        "llm_call_ids": agent_call.llm_call_ids,
-                        "tool_call_ids": agent_call.tool_call_ids,
-                        "user_interaction_ids": agent_call.user_interaction_ids,
-                    }
-                )
-            else:
-                print(f"Warning: AgentCallModel with id {agent_id} not found")
-
-    def _trace_agent_call_sync(self, func, name, *args, **kwargs):
-        agent_id = self._start_agent_call(name, args, kwargs)
-
-        token_agent = self.current_agent_id.set(agent_id)
-        token_llm = self.current_llm_call_ids.set([])
-        token_tool = self.current_tool_call_ids.set([])
-        token_user = self.current_user_interaction_ids.set([])
-
-        user_interaction_tracer = UserInteractionTracer(self)
+        # Start tracking network calls for this component
+        self.start_component(component_id)
 
         try:
-            with user_interaction_tracer.capture():
-                result = func(*args, **kwargs)
+            # Execute the agent
+            result = func(*args, **kwargs)
 
-            self._end_agent_call(agent_id)
+            # Calculate resource usage
+            end_time = datetime.now()
+            end_memory = psutil.Process().memory_info().rss
+            memory_used = max(0, end_memory - start_memory)
+
+            # Get children components collected during execution
+            children = self.agent_children.get()
+            
+            # Set parent_id for all children
+            for child in children:
+                child["parent_id"] = component_id
+
+            # End tracking network calls for this component
+            self.end_component(component_id)
+
+            # Create agent component with children
+            agent_component = self.create_agent_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                agent_type=agent_type,
+                version=version,
+                capabilities=capabilities or [],
+                start_time=start_time,
+                end_time=end_time,
+                memory_used=memory_used,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=self._sanitize_output(result),
+                children=children
+            )
+
+            self.add_component(agent_component)
+            return result
 
         except Exception as e:
-            self._log_error(e, "agent", name, agent_id)
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            # Get children even in case of error
+            children = self.agent_children.get()
+            
+            # Set parent_id for all children
+            for child in children:
+                child["parent_id"] = component_id
+            
+            # End tracking network calls for this component
+            self.end_component(component_id)
+            
+            agent_component = self.create_agent_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                agent_type=agent_type,
+                version=version,
+                capabilities=capabilities or [],
+                start_time=start_time,
+                end_time=datetime.now(),
+                memory_used=0,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=None,
+                error=error_component,
+                children=children
+            )
+
+            self.add_component(agent_component)
             raise
         finally:
-            self.current_agent_id.reset(token_agent)
-            self.current_llm_call_ids.reset(token_llm)
-            self.current_tool_call_ids.reset(token_tool)
-            self.current_user_interaction_ids.reset(token_user)
+            # Reset context variables
+            self.current_agent_id.reset(agent_token)
+            self.current_agent_name.reset(agent_name_token)
+            self.agent_children.reset(children_token)
 
-        return result
+    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+        """Asynchronous version of agent tracing"""
+        if not self.is_active:
+            return await func(*args, **kwargs)
 
-    async def _trace_agent_call_async(self, func, name, *args, **kwargs):
-        agent_id = self._start_agent_call(name, args, kwargs)
+        start_time = datetime.now()
+        start_memory = psutil.Process().memory_info().rss
+        component_id = str(uuid.uuid4())
+        hash_id = str(uuid.uuid4())
 
-        token_agent = self.current_agent_id.set(agent_id)
-        token_llm = self.current_llm_call_ids.set([])
-        token_tool = self.current_tool_call_ids.set([])
-        token_user = self.current_user_interaction_ids.set([])
+        # Initialize empty children list for this agent
+        children_token = self.agent_children.set([])
+        
+        # Set the current agent context
+        agent_token = self.current_agent_id.set(component_id)
+        agent_name_token = self.current_agent_name.set(name)
 
-        user_interaction_tracer = UserInteractionTracer(self)
+        # Start tracking network calls for this component
+        self.start_component(component_id)
 
         try:
-            async with user_interaction_tracer.async_capture():
-                result = await func(*args, **kwargs)
+            # Execute the agent
+            result = await func(*args, **kwargs)
 
-            self._end_agent_call(agent_id)
+            # Calculate resource usage
+            end_time = datetime.now()
+            end_memory = psutil.Process().memory_info().rss
+            memory_used = max(0, end_memory - start_memory)
+
+            # Get children components collected during execution
+            children = self.agent_children.get()
+            
+            # Set parent_id for all children
+            for child in children:
+                child["parent_id"] = component_id
+
+            # End tracking network calls for this component
+            self.end_component(component_id)
+
+            # Create agent component with children
+            agent_component = self.create_agent_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                agent_type=agent_type,
+                version=version,
+                capabilities=capabilities or [],
+                start_time=start_time,
+                end_time=end_time,
+                memory_used=memory_used,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=self._sanitize_output(result),
+                children=children
+            )
+
+            self.add_component(agent_component)
+            return result
 
         except Exception as e:
-            self._log_error(e, "agent", name, agent_id)
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            # Get children even in case of error
+            children = self.agent_children.get()
+            
+            # Set parent_id for all children
+            for child in children:
+                child["parent_id"] = component_id
+            
+            # End tracking network calls for this component
+            self.end_component(component_id)
+            
+            agent_component = self.create_agent_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                agent_type=agent_type,
+                version=version,
+                capabilities=capabilities or [],
+                start_time=start_time,
+                end_time=datetime.now(),
+                memory_used=0,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=None,
+                error=error_component,
+                children=children
+            )
+
+            self.add_component(agent_component)
             raise
         finally:
-            self.current_agent_id.reset(token_agent)
-            self.current_llm_call_ids.reset(token_llm)
-            self.current_tool_call_ids.reset(token_tool)
-            self.current_user_interaction_ids.reset(token_user)
+            # Reset context variables
+            self.current_agent_id.reset(agent_token)
+            self.current_agent_name.reset(agent_name_token)
+            self.agent_children.reset(children_token)
 
-        return result
+    def create_agent_component(self, **kwargs):
+        """Create an agent component according to the data structure"""
+        start_time = kwargs["start_time"]
+        component = {
+            "id": kwargs["component_id"],
+            "hash_id": kwargs["hash_id"],
+            "source_hash_id": None,
+            "type": "agent",
+            "name": kwargs["name"],
+            "start_time": start_time.isoformat(),
+            "end_time": kwargs["end_time"].isoformat(),
+            "error": kwargs.get("error"),
+            "parent_id": None,
+            "info": {
+                "agent_type": kwargs["agent_type"],
+                "version": kwargs["version"],
+                "capabilities": kwargs["capabilities"],
+                "memory_used": kwargs["memory_used"]
+            },
+            "data": {
+                "input": kwargs["input_data"],
+                "output": kwargs["output_data"],
+                "memory_used": kwargs["memory_used"]
+            },
+            "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
+            "interactions": [{
+                "id": f"int_{uuid.uuid4()}",
+                "interaction_type": "input",
+                "timestamp": start_time.isoformat(),
+                "content": kwargs["input_data"]
+            }, {
+                "id": f"int_{uuid.uuid4()}",
+                "interaction_type": "output",
+                "timestamp": kwargs["end_time"].isoformat(),
+                "content": kwargs["output_data"]
+            }],
+            "children": kwargs.get("children", [])
+        }
 
-    def _serialize_params(self, args, kwargs):
-        def _serialize(obj):
-            if isinstance(obj, (str, int, float, bool, type(None))):
-                return obj
-            elif isinstance(obj, (list, tuple)):
-                return [_serialize(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {str(k): _serialize(v) for k, v in obj.items()}
-            else:
-                return str(obj)
+        return component
 
-        # Handle 'self' argument for class methods
-        if args and isinstance(args[0], object) and hasattr(args[0], "__dict__"):
-            args = ("self (instance)",) + args[1:]
+    def start_component(self, component_id):
+        """Start tracking network calls for a component"""
+        component_network_calls = self.component_network_calls.get()
+        if component_id not in component_network_calls:
+            component_network_calls[component_id] = []
+        self.component_network_calls.set(component_network_calls)
 
-        serialized_args = {f"arg_{i}": _serialize(arg) for i, arg in enumerate(args)}
-        serialized_kwargs = {k: _serialize(v) for k, v in kwargs.items()}
-        return {**serialized_args, **serialized_kwargs}
+    def end_component(self, component_id):
+        """End tracking network calls for a component"""
+        component_network_calls = self.component_network_calls.get()
+        if component_id in component_network_calls:
+            component_network_calls[component_id] = []
+        self.component_network_calls.set(component_network_calls)
 
-    def _args_to_dict(self, args):
-        return {f"arg_{i}": arg for i, arg in enumerate(args)}
+    def _sanitize_input(self, args: tuple, kwargs: dict) -> Dict:
+        """Sanitize and format input data"""
+        return {
+            "args": [str(arg) if not isinstance(arg, (int, float, bool, str, list, dict)) else arg for arg in args],
+            "kwargs": {
+                k: str(v) if not isinstance(v, (int, float, bool, str, list, dict)) else v 
+                for k, v in kwargs.items()
+            }
+        }
+
+    def _sanitize_output(self, output: Any) -> Any:
+        """Sanitize and format output data"""
+        if isinstance(output, (int, float, bool, str, list, dict)):
+            return output
+        return str(output)

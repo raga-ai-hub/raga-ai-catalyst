@@ -24,7 +24,7 @@ from .agentic_tracing.agentic_tracing import AgenticTracing
 logger = logging.getLogger(__name__)
 
 
-class Tracer:
+class Tracer(AgenticTracing):
     NUM_PROJECTS = 100
     TIMEOUT = 10
     def __init__(
@@ -42,6 +42,7 @@ class Tracer:
 
         Args:
             project_name (str): The name of the project.
+            dataset_name (str): The name of the dataset.
             tracer_type (str, optional): The type of tracer. Defaults to None.
             pipeline (dict, optional): The pipeline configuration. Defaults to None.
             metadata (dict, optional): The metadata. Defaults to None.
@@ -51,6 +52,15 @@ class Tracer:
         Returns:
             None
         """
+        # Prepare user_detail dictionary for AgenticTracing
+        user_detail = {
+            "project_name": project_name,
+            "project_id": get_unique_key(project_name),  # Using utility function to generate unique ID
+            "dataset_name": dataset_name,
+            "trace_user_detail": metadata or {}  # Use metadata as trace_user_detail if provided
+        }
+        super().__init__(user_detail=user_detail)
+        self.is_active = True
         self.project_name = project_name
         self.dataset_name = dataset_name
         self.tracer_type = tracer_type
@@ -160,8 +170,8 @@ class Tracer:
             from .llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer(self._pass_user_data()).start()
         else:
-            AgenticTracing(self._pass_user_data()).start()
-            
+            super().start()
+            return self
 
     def stop(self):
         """Stop the tracer and initiate trace upload."""
@@ -178,7 +188,7 @@ class Tracer:
             from .llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer(self._pass_user_data()).stop()
         else:
-            AgenticTracing(self._pass_user_data()).stop()
+            super().stop()
 
     def get_upload_status(self):
         """Check the status of the trace upload."""
