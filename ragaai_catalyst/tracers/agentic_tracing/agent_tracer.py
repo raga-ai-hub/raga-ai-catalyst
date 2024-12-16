@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
+from .unique_decorator import mydecorator
+
 import contextvars
 import asyncio
 
@@ -13,6 +15,9 @@ class AgentTracerMixin:
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
+        self._trace_sync_agent_execution = mydecorator(self._trace_sync_agent_execution)
+        self._trace_agent_execution = mydecorator(self._trace_agent_execution)
+
 
     def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
         def decorator(func):
@@ -43,7 +48,7 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())
+        hash_id = self._trace_sync_agent_execution.hash_id
 
         # Initialize empty children list for this agent
         children_token = self.agent_children.set([])
@@ -143,7 +148,7 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())
+        hash_id = self._trace_agent_execution.hash_id
 
         # Initialize empty children list for this agent
         children_token = self.agent_children.set([])

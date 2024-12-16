@@ -9,6 +9,8 @@ import uuid
 import os
 import contextvars
 
+from .unique_decorator import mydecorator
+
 from .utils.trace_utils import calculate_cost, load_model_costs
 from .utils.llm_utils import extract_llm_output
 
@@ -18,6 +20,8 @@ class LLMTracerMixin:
         self.patches = []
         self.model_costs = load_model_costs()
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
+        # Apply decorator to trace_llm_call method
+        self.trace_llm_call = mydecorator(self.trace_llm_call)
 
     def instrument_llm_calls(self):
         # Use wrapt to register post-import hooks
@@ -160,7 +164,7 @@ class LLMTracerMixin:
         }
 
         return component
-
+    
     def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
         if not self.is_active:
@@ -169,7 +173,7 @@ class LLMTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())
+        hash_id = self.trace_llm_call.hash_id  # Get hash_id from decorator
 
         try:
             # Execute the LLM call

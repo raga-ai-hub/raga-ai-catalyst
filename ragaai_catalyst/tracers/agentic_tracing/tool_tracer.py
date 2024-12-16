@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
+from .unique_decorator import mydecorator
 import contextvars
 import asyncio
 
@@ -12,6 +13,9 @@ class ToolTracerMixin:
         self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
+        self._trace_sync_tool_execution = mydecorator(self._trace_sync_tool_execution)
+        self._trace_tool_execution = mydecorator(self._trace_tool_execution)
+
 
     def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
         def decorator(func):
@@ -42,7 +46,7 @@ class ToolTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())
+        hash_id = self._trace_sync_tool_execution.hash_id
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -112,7 +116,7 @@ class ToolTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())
+        hash_id = self._trace_tool_execution.hash_id
 
         try:
             # Execute the tool
