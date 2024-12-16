@@ -34,16 +34,11 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         self.project_name = user_detail["project_name"]
         self.project_id = user_detail["project_id"]
         self.dataset_name = user_detail["dataset_name"]
-        self.user_detail = user_detail["trace_user_detail"]
+        self.trace_user_detail = user_detail["trace_user_detail"]
         self.base_url = f"{RagaAICatalyst.BASE_URL}"
         self.timeout = 10
 
-        # Initialize base tracer with user details
-        user_details = {
-            'project_name': self.project_name,
-            'dataset_name': self.dataset_name
-        }
-        BaseTracer.__init__(self, user_details)
+        BaseTracer.__init__(self, user_detail)
         
         self.auto_instrument_llm = auto_instrument_llm
         self.tools: Dict[str, Tool] = {}
@@ -97,16 +92,6 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
             self.unpatch_llm_calls()
             self.is_active = False
 
-            # Upload traces
-            upload_traces = UploadTraces(
-                json_file_path="random.json",
-                project_name=self.project_name,
-                project_id=self.project_id,
-                dataset_name=self.dataset_name,
-                user_detail=self.user_detail,
-                base_url=self.base_url
-            )
-            # upload_traces.upload_traces()
 
     def _calculate_final_metrics(self):
         """Calculate total cost and tokens from all components"""

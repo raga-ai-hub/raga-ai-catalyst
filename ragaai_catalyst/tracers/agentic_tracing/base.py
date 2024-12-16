@@ -17,10 +17,15 @@ from .data_structure import (
     NetworkCall, Interaction, Error
 )
 
+from ..upload_traces import UploadTraces
+from ...ragaai_catalyst import RagaAICatalyst
+
 class BaseTracer:
     def __init__(self, user_details):
-        self.project_name = user_details['project_name']  # Access the project_name
-        self.dataset_name = user_details['dataset_name']  # Access the dataset_name
+        self.user_details = user_details
+        self.project_name = self.user_details['project_name']  # Access the project_name
+        self.dataset_name = self.user_details['dataset_name']  # Access the dataset_name
+        self.project_id = self.user_details['project_id']  # Access the project_id
         
         # Create traces directory if it doesn't exist
         self.traces_dir = Path("traces")
@@ -144,6 +149,23 @@ class BaseTracer:
                 json.dump(self.trace.__dict__, f, default=lambda o: o.__dict__, indent=2)
                 
             print(f"Trace saved to {filepath}")
+            # import pdb; pdb.set_trace()
+            # Upload traces
+            json_file_path = str(filepath)
+            project_name = self.project_name
+            project_id = self.project_id  # TODO: Replace with actual project ID
+            dataset_name = self.dataset_name
+            user_detail = self.user_details
+            base_url = os.getenv('RAGAAI_CATALYST_BASE_URL')
+            upload_traces = UploadTraces(
+                json_file_path=json_file_path,
+                project_name=project_name,
+                project_id=project_id,
+                dataset_name=dataset_name,
+                user_detail=user_detail,
+                base_url=base_url
+            )
+            upload_traces.upload_traces()
                 
     def add_component(self, component: Component):
         """Add a component to the trace"""

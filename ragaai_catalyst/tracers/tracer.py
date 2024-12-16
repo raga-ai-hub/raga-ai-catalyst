@@ -52,14 +52,7 @@ class Tracer(AgenticTracing):
         Returns:
             None
         """
-        # Prepare user_detail dictionary for AgenticTracing
-        user_detail = {
-            "project_name": project_name,
-            "project_id": get_unique_key(project_name),  # Using utility function to generate unique ID
-            "dataset_name": dataset_name,
-            "trace_user_detail": metadata or {}  # Use metadata as trace_user_detail if provided
-        }
-        super().__init__(user_detail=user_detail)
+
         self.is_active = True
         self.project_name = project_name
         self.dataset_name = dataset_name
@@ -92,6 +85,7 @@ class Tracer(AgenticTracing):
             self.project_id = [
                 project["id"] for project in response.json()["data"]["content"] if project["name"] == project_name
             ][0]
+            super().__init__(user_detail=self._pass_user_data())
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to retrieve projects list: {e}")
