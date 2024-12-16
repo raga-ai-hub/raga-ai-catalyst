@@ -57,7 +57,7 @@ def calculate_cost(
 
 def load_model_costs():
     try:
-        with open("agentneo/configs/model_costs.json", "r") as file:
+        with open("/Users/siddharthakosti/Downloads/catalyst_error_handling/catalyst_v2/catalyst_v2_new_1/ragaai-catalyst/ragaai_catalyst/tracers/agentic_tracing/configs/model_costs.json", "r") as file:
             return json.load(file)
     except FileNotFoundError:
         with resources.open_text("agentneo.configs", "model_costs.json") as file:

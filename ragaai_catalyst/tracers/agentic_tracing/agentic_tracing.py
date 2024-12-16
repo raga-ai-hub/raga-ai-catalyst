@@ -54,7 +54,7 @@ class AgenticTracing(LLMTracerMixin, ToolTracerMixin, AgentTracerMixin, BaseTrac
             user_detail=self.user_detail,
             base_url=self.base_url
         )
-        upload_traces.upload_traces()
+        # upload_traces.upload_traces()
 
     # If you need an unpatch_methods method
     def unpatch_methods(self):

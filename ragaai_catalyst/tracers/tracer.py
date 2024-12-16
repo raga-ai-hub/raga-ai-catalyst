@@ -176,9 +176,9 @@ class Tracer:
             return "Trace upload initiated. Use get_upload_status() to check the status."
         elif self.tracer_type == "llamaindex":
             from .llamaindex_callback import LlamaIndexTracer
-            return LlamaIndexTracer().stop()
+            return LlamaIndexTracer(self._pass_user_data()).stop()
         else:
-            AgenticTracing().stop()
+            AgenticTracing(self._pass_user_data()).stop()
 
     def get_upload_status(self):
         """Check the status of the trace upload."""

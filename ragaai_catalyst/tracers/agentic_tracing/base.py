@@ -39,17 +39,17 @@ class BaseTracer:
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
-        self.project_info = self._get_project(project_name)
-        if self.project_info is None:
-            raise ValueError(
-                f"Project '{project_name}' does not exist. Please create a project first."
-            )
-        self.project_id = self.project_info.id
+        # self.project_info = self._get_project(project_name)
+        # if self.project_info is None:
+        #     raise ValueError(
+        #         f"Project '{project_name}' does not exist. Please create a project first."
+        #     )
+        # self.project_id = self.project_info.id
 
         self.trace_data = {
             "project_info": {
                 "project_name": project_name,
-                "start_time": self.project_info.start_time,
+                # "start_time": self.project_info.start_time,
             },
             "llm_calls": [],
             "tool_calls": [],
@@ -109,58 +109,58 @@ class BaseTracer:
         self._save_system_info()
 
     def stop(self):
-        with self.Session() as session:
-            project = session.query(ProjectInfoModel).get(self.project_id)
-            if project is None:
-                raise ValueError(f"Project with id {self.project_id} not found")
+        # with self.Session() as session:
+        #     project = session.query(ProjectInfoModel).get(self.project_id)
+        #     if project is None:
+        #         raise ValueError(f"Project with id {self.project_id} not found")
 
-            trace = session.query(TraceModel).get(self.trace_id)
-            if trace is None:
-                raise ValueError(f"Trace with id {self.trace_id} not found")
+        #     trace = session.query(TraceModel).get(self.trace_id)
+        #     if trace is None:
+        #         raise ValueError(f"Trace with id {self.trace_id} not found")
 
-            trace.end_time = datetime.now()
-            trace.duration = (trace.end_time - trace.start_time).total_seconds()
+        #     trace.end_time = datetime.now()
+        #     trace.duration = (trace.end_time - trace.start_time).total_seconds()
 
-            project.end_time = trace.end_time
-            if project.duration is None:
-                project.duration = 0
-            project.duration += trace.duration  # Accumulate duration
+        #     project.end_time = trace.end_time
+        #     if project.duration is None:
+        #         project.duration = 0
+        #     project.duration += trace.duration  # Accumulate duration
 
-            llm_calls = (
-                session.query(LLMCallModel).filter_by(trace_id=self.trace_id).all()
-            )
-            trace_cost = sum(
-                json.loads(llm_call.cost).get("total", 0) for llm_call in llm_calls
-            )
-            trace_tokens = sum(
-                json.loads(llm_call.token_usage).get("total", 0)
-                for llm_call in llm_calls
-            )
+        #     llm_calls = (
+        #         session.query(LLMCallModel).filter_by(trace_id=self.trace_id).all()
+        #     )
+        #     trace_cost = sum(
+        #         json.loads(llm_call.cost).get("total", 0) for llm_call in llm_calls
+        #     )
+        #     trace_tokens = sum(
+        #         json.loads(llm_call.token_usage).get("total", 0)
+        #         for llm_call in llm_calls
+        #     )
 
-            # Accumulate costs and tokens instead of overwriting
-            if project.total_cost is None:
-                project.total_cost = 0
-            project.total_cost += trace_cost
+        #     # Accumulate costs and tokens instead of overwriting
+        #     if project.total_cost is None:
+        #         project.total_cost = 0
+        #     project.total_cost += trace_cost
 
-            if project.total_tokens is None:
-                project.total_tokens = 0
-            project.total_tokens += trace_tokens
+        #     if project.total_tokens is None:
+        #         project.total_tokens = 0
+        #     project.total_tokens += trace_tokens
 
-            session.commit()
+        #     session.commit()
 
-            end_time = trace.end_time
-            duration = trace.duration
-            total_cost = project.total_cost
-            total_tokens = project.total_tokens
+        #     end_time = trace.end_time
+        #     duration = trace.duration
+        #     total_cost = project.total_cost
+        #     total_tokens = project.total_tokens
 
-        self.trace_data["project_info"].update(
-            {
-                "end_time": end_time,
-                "duration": duration,
-                "total_cost": total_cost,
-                "total_tokens": total_tokens,
-            }
-        )
+        # self.trace_data["project_info"].update(
+        #     {
+        #         "end_time": end_time,
+        #         "duration": duration,
+        #         "total_cost": total_cost,
+        #         "total_tokens": total_tokens,
+        #     }
+        # )
 
         print(f"Tracing Completed.\nData saved to the database and JSON file.\n")
 
