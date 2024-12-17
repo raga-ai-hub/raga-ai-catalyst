@@ -148,6 +148,7 @@ class BaseTracer:
 
             # Change span ids to int
             self.trace = self._change_span_ids_to_int(self.trace)
+            self.trace = self._change_agent_intput_output(self.trace)
             
             # Create filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -200,4 +201,14 @@ class BaseTracer:
                     children["id"] = id
                     children["parent_id"] = span.id
                     id += 1
+        return trace
+
+    def _change_agent_intput_output(self, trace):
+        for span in trace.data[0]["spans"]:
+            if span.type == "agent":
+                # import pdb; pdb.set_trace()
+                childrens = span.data["children"]
+                if childrens != []:
+                    span.data["input"] = childrens[0]["data"]["input"]
+                    span.data["output"] = childrens[-1]["data"]["output"]
         return trace
