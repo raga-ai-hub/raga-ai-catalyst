@@ -131,7 +131,8 @@ class BaseTracer:
             start_time=self.start_time,
             end_time="",  # Will be set when trace is stopped
             metadata=metadata,
-            data=self.components
+            data=self.components,
+            replays={"source": None}
         )
         
     def stop(self):
