@@ -19,6 +19,8 @@ class LLMTracerMixin:
         self.patches = []
         self.model_costs = load_model_costs()
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
+        self.component_network_calls = {}  
+        self.current_component_id = None  
         # Apply decorator to trace_llm_call method
         self.trace_llm_call = mydecorator(self.trace_llm_call)
 
@@ -203,6 +205,8 @@ class LLMTracerMixin:
     def create_llm_component(self, **kwargs):
         """Create an LLM component according to the data structure"""
         start_time = kwargs["start_time"]
+        end_time = kwargs["end_time"]
+        
         component = {
             "id": kwargs["component_id"],
             "hash_id": kwargs["hash_id"],
@@ -210,7 +214,7 @@ class LLMTracerMixin:
             "type": "llm",
             "name": kwargs["name"],
             "start_time": start_time.isoformat(),
-            "end_time": kwargs["end_time"].isoformat(),
+            "end_time": end_time.isoformat(),
             "error": kwargs.get("error"),
             "parent_id": self.current_agent_id.get(),
             "info": {
@@ -222,25 +226,79 @@ class LLMTracerMixin:
             },
             "data": {
                 "input": kwargs["input_data"],
-                "output": kwargs["output_data"],
+                "output": kwargs["output_data"].output_response if kwargs["output_data"] else None,
                 "memory_used": kwargs["memory_used"]
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
-            "interactions": [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "timestamp": start_time.isoformat(),
-                "content": kwargs["input_data"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "timestamp": kwargs["end_time"].isoformat(),
-                "content": kwargs["output_data"]
-            }]
+            "interactions": [
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "input",
+                    "timestamp": start_time.isoformat(),
+                    "content": kwargs["input_data"]
+                },
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "output",
+                    "timestamp": end_time.isoformat(),
+                    "content": kwargs["output_data"].output_response if kwargs["output_data"] else None
+                }
+            ]
         }
 
         return component
     
+    def start_component(self, component_id):
+        """Start tracking network calls for a component"""
+        self.component_network_calls[component_id] = []
+        self.current_component_id = component_id
+
+    def end_component(self, component_id):
+        """Stop tracking network calls for a component"""
+        self.current_component_id = None
+
+    def track_network_call(self, request, response, error=None):
+        """Track a network call for the current component"""
+        if self.current_component_id is None:
+            return
+
+        start_time = getattr(request, '_start_time', datetime.now())
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds()
+
+        # Calculate bytes sent/received
+        request_body = getattr(request, 'body', None)
+        bytes_sent = len(str(request_body).encode('utf-8')) if request_body else 0
+        response_body = getattr(response, 'text', None)
+        bytes_received = len(str(response_body).encode('utf-8')) if response_body else 0
+
+        # Extract URL components
+        url = str(request.url) if hasattr(request, 'url') else None
+        protocol = url.split('://')[0] if url else None
+
+        network_call = {
+            "url": url,
+            "method": request.method.lower() if hasattr(request, 'method') else None,
+            "status_code": response.status_code if hasattr(response, 'status_code') else None,
+            "response_time": response_time,
+            "bytes_sent": bytes_sent,
+            "bytes_received": bytes_received,
+            "protocol": protocol,
+            "connection_id": str(uuid.uuid4()),
+            "parent_id": None,
+            "request": {
+                "headers": dict(request.headers) if hasattr(request, 'headers') else {},
+                "body": request_body
+            },
+            "response": {
+                "headers": dict(response.headers) if hasattr(response, 'headers') else {},
+                "body": response_body
+            } if response else None,
+            "error": str(error) if error else None
+        }
+
+        self.component_network_calls[self.current_component_id].append(network_call)
+
     def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
         if not self.is_active:
@@ -250,6 +308,9 @@ class LLMTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = self.trace_llm_call.hash_id  # Get hash_id from decorator
+
+        # Start tracking network calls for this component
+        self.start_component(component_id)
 
         try:
             # Execute the LLM call
@@ -267,39 +328,41 @@ class LLMTracerMixin:
             token_usage = self._extract_token_usage(result)
             cost = self._calculate_cost(token_usage, model_name)
 
-            # Create component
-            component = {
-                "id": component_id,
-                "hash_id": hash_id,
-                "source_hash_id": None,
-                "type": "llm",
-                "name": "llm_call",
-                "start_time": start_time.isoformat(),
-                "end_time": datetime.now().isoformat(),
-                "error": None,
-                "parent_id": None,
-                "info": {
-                    "model": model_name,
-                    "parameters": parameters,
-                    "token_usage": token_usage,
-                    "cost": cost
-                },
-                "data": {
-                    "input": {
-                        "args": list(args),
-                        "kwargs": kwargs
-                    },
-                    "output": extract_llm_output(result),
-                    "memory_used": memory_used
-                },
-                "network_calls": [],
-                "interactions": []
-            }
+            # Format input data to only include messages
+            input_data = kwargs.get("messages", [])
+            
+            # Get output data from LLM response
+            output_data = extract_llm_output(result)
+
+            end_time = datetime.now()
+
+            # Stop tracking network calls
+            self.end_component(component_id)
+
+            # Create component with simplified data structure
+            component = self.create_llm_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=self.current_llm_call_name.get(),
+                start_time=start_time,
+                end_time=end_time,
+                error=None,
+                llm_type="llm",
+                version="1.0.0",
+                memory_used=memory_used,
+                cost=cost,
+                tokens=token_usage,
+                input_data=input_data,
+                output_data=output_data
+            )
 
             self.add_component(component)
             return result
 
         except Exception as e:
+            # Stop tracking network calls in case of error
+            self.end_component(component_id)
+            
             end_time = datetime.now()
             
             # Create error component
@@ -311,44 +374,56 @@ class LLMTracerMixin:
             }
 
             # Create error trace component
-            component = {
-                "id": component_id,
-                "hash_id": hash_id,
-                "source_hash_id": None,
-                "type": "llm",
-                "name": "llm_call",
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "error": error_component,
-                "parent_id": None,
-                "info": {
-                    "model": self._extract_model_name(kwargs),
-                    "parameters": self._extract_parameters(kwargs),
-                    "token_usage": {
-                        "prompt_tokens": 0,
-                        "completion_tokens": 0,
-                        "total_tokens": 0
-                    },
-                    "cost": {
-                        "prompt_cost": 0.0,
-                        "completion_cost": 0.0,
-                        "total_cost": 0.0
-                    }
-                },
-                "data": {
-                    "input": {
-                        "args": list(args),
-                        "kwargs": kwargs
-                    },
-                    "output": None,
-                    "memory_used": 0
-                },
-                "network_calls": [],
-                "interactions": []
-            }
+            component = self.create_llm_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=self.current_llm_call_name.get(),
+                start_time=start_time,
+                end_time=end_time,
+                error=error_component,
+                llm_type="llm",
+                version="1.0.0",
+                memory_used=0,
+                cost={"prompt_cost": 0.0, "completion_cost": 0.0, "total_cost": 0.0},
+                tokens={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                input_data=input_data,
+                output_data=None
+            )
             
             self.add_component(component)
             raise
+
+    def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
+        def decorator(func_or_class):
+            if isinstance(func_or_class, type):
+                for attr_name, attr_value in func_or_class.__dict__.items():
+                    if callable(attr_value) and not attr_name.startswith("__"):
+                        setattr(
+                            func_or_class,
+                            attr_name,
+                            self.trace_llm(f"{name}.{attr_name}", tool_type, version)(attr_value),
+                        )
+                return func_or_class
+            else:
+                @functools.wraps(func_or_class)
+                async def async_wrapper(*args, **kwargs):
+                    token = self.current_llm_call_name.set(name)
+                    try:
+                        return await func_or_class(*args, **kwargs)
+                    finally:
+                        self.current_llm_call_name.reset(token)
+
+                @functools.wraps(func_or_class)
+                def sync_wrapper(*args, **kwargs):
+                    token = self.current_llm_call_name.set(name)
+                    try:
+                        return func_or_class(*args, **kwargs)
+                    finally:
+                        self.current_llm_call_name.reset(token)
+
+                return async_wrapper if asyncio.iscoroutinefunction(func_or_class) else sync_wrapper
+
+        return decorator
 
     def unpatch_llm_calls(self):
         """Remove all patches"""
