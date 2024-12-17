@@ -10,7 +10,6 @@ import os
 import contextvars
 
 from .unique_decorator import mydecorator
-
 from .utils.trace_utils import calculate_cost, load_model_costs
 from .utils.llm_utils import extract_llm_output
 
@@ -28,6 +27,8 @@ class LLMTracerMixin:
         wrapt.register_post_import_hook(self.patch_openai_methods, "openai")
         wrapt.register_post_import_hook(self.patch_litellm_methods, "litellm")
         wrapt.register_post_import_hook(self.patch_anthropic_methods, "anthropic")
+        wrapt.register_post_import_hook(self.patch_google_genai_methods, "google.generativeai")
+        wrapt.register_post_import_hook(self.patch_vertex_ai_methods, "vertexai")
 
     def patch_openai_methods(self, module):
         if hasattr(module, "OpenAI"):
@@ -41,6 +42,16 @@ class LLMTracerMixin:
         if hasattr(module, "Anthropic"):
             client_class = getattr(module, "Anthropic")
             self.wrap_anthropic_client_methods(client_class)
+
+    def patch_google_genai_methods(self, module):
+        if hasattr(module, "GenerativeModel"):
+            model_class = getattr(module, "GenerativeModel")
+            self.wrap_genai_model_methods(model_class)
+
+    def patch_vertex_ai_methods(self, module):
+        if hasattr(module, "GenerativeModel"):
+            model_class = getattr(module, "GenerativeModel")
+            self.wrap_vertex_model_methods(model_class)
 
     def wrap_openai_client_methods(self, client_class):
         original_init = client_class.__init__
@@ -66,6 +77,30 @@ class LLMTracerMixin:
 
         setattr(client_class, "__init__", patched_init)
 
+    def wrap_genai_model_methods(self, model_class):
+        original_init = model_class.__init__
+
+        @functools.wraps(original_init)
+        def patched_init(model_self, *args, **kwargs):
+            original_init(model_self, *args, **kwargs)
+            self.wrap_method(model_self, "generate_content")
+            if hasattr(model_self, "generate_content_async"):
+                self.wrap_method(model_self, "generate_content_async")
+
+        setattr(model_class, "__init__", patched_init)
+
+    def wrap_vertex_model_methods(self, model_class):
+        original_init = model_class.__init__
+
+        @functools.wraps(original_init)
+        def patched_init(model_self, *args, **kwargs):
+            original_init(model_self, *args, **kwargs)
+            self.wrap_method(model_self, "generate_content")
+            if hasattr(model_self, "generate_content_async"):
+                self.wrap_method(model_self, "generate_content_async")
+
+        setattr(model_class, "__init__", patched_init)
+
     def patch_litellm_methods(self, module):
         self.wrap_method(module, "completion")
         self.wrap_method(module, "acompletion")
@@ -84,28 +119,69 @@ class LLMTracerMixin:
     def _extract_model_name(self, kwargs):
         """Extract model name from kwargs or result"""
         model = kwargs.get("model", "")
-        if not model and "messages" in kwargs:
+        if not model:
             # Try to extract from messages
-            messages = kwargs["messages"]
-            if messages and isinstance(messages, list) and messages[0].get("role") == "system":
-                model = messages[0].get("model", "")
+            if "messages" in kwargs:
+                messages = kwargs["messages"]
+                if messages and isinstance(messages, list) and messages[0].get("role") == "system":
+                    model = messages[0].get("model", "")
+            # Try to extract from GenerativeModel instance
+            elif hasattr(kwargs.get("self", None), "model_name"):
+                model = kwargs["self"].model_name
         return model or "unknown"
 
     def _extract_parameters(self, kwargs, result=None):
         """Extract parameters from kwargs or result"""
-        return {
+        params = {
             "temperature": kwargs.get("temperature", getattr(result, "temperature", 0.7)),
             "top_p": kwargs.get("top_p", getattr(result, "top_p", 1.0)),
             "max_tokens": kwargs.get("max_tokens", getattr(result, "max_tokens", 512))
         }
+        
+        # Add Google AI specific parameters if available
+        if hasattr(kwargs.get("self", None), "generation_config"):
+            gen_config = kwargs["self"].generation_config
+            params.update({
+                "candidate_count": getattr(gen_config, "candidate_count", 1),
+                "stop_sequences": getattr(gen_config, "stop_sequences", []),
+                "top_k": getattr(gen_config, "top_k", 40)
+            })
+        
+        return params
 
     def _extract_token_usage(self, result):
         """Extract token usage from result"""
-        usage = getattr(result, "usage", {})
+        # Handle standard OpenAI/Anthropic format
+        if hasattr(result, "usage"):
+            usage = result.usage
+            return {
+                "prompt_tokens": getattr(usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(usage, "completion_tokens", 0),
+                "total_tokens": getattr(usage, "total_tokens", 0)
+            }
+        
+        # Handle Google GenerativeAI format
+        if hasattr(result, "parts"):
+            total_tokens = sum(len(part.text.split()) for part in result.parts)
+            return {
+                "prompt_tokens": 0,  # Google AI doesn't provide this breakdown
+                "completion_tokens": total_tokens,
+                "total_tokens": total_tokens
+            }
+            
+        # Handle Vertex AI format
+        if hasattr(result, "text"):
+            total_tokens = len(result.text.split())
+            return {
+                "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
+                "completion_tokens": total_tokens,
+                "total_tokens": total_tokens
+            }
+        
         return {
-            "prompt_tokens": getattr(usage, "prompt_tokens", 0),
-            "completion_tokens": getattr(usage, "completion_tokens", 0),
-            "total_tokens": getattr(usage, "total_tokens", 0)
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
         }
 
     def _calculate_cost(self, token_usage, model_name):
@@ -272,7 +348,7 @@ class LLMTracerMixin:
             }
             
             self.add_component(component)
-            raise   
+            raise
 
     def unpatch_llm_calls(self):
         """Remove all patches"""
@@ -290,4 +366,4 @@ class LLMTracerMixin:
             return [self._sanitize_api_keys(item) for item in data]
         elif isinstance(data, tuple):
             return tuple(self._sanitize_api_keys(item) for item in data)
-        return data 
+        return data
