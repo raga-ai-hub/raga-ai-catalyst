@@ -64,7 +64,7 @@ class BaseTracer:
             id=f"sys_{self.trace_id}",
             os=os_info,
             environment=env_info,
-            source_code="Path to source code .zip file"  # TODO: Implement source code archiving
+            source_code="Path to the source code .zip file in format hashid.zip"  # TODO: Implement source code archiving
         )
         
     def _get_resources(self) -> Resources:
