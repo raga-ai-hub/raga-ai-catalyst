@@ -262,7 +262,7 @@ class AgentTracerMixin:
             "data": {
                 "input": kwargs["input_data"],
                 "output": kwargs["output_data"],
-                "memory_used": kwargs["memory_used"]
+                "children": kwargs.get("children", [])
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
             "interactions": [{
@@ -275,8 +275,7 @@ class AgentTracerMixin:
                 "interaction_type": "output",
                 "timestamp": kwargs["end_time"].isoformat(),
                 "content": kwargs["output_data"]
-            }],
-            "children": kwargs.get("children", [])
+            }]
         }
 
         return component

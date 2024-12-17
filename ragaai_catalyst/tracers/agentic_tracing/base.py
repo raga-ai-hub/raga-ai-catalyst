@@ -1,6 +1,7 @@
 import json
 import os
 import platform
+import re
 import psutil
 import pkg_resources
 from datetime import datetime
@@ -144,6 +145,9 @@ class BaseTracer:
         if self.trace:
             self.trace.data[0]["end_time"] = datetime.now().isoformat()
             self.trace.end_time = datetime.now().isoformat()
+
+            # Change span ids to int
+            self.trace = self._change_span_ids_to_int(self.trace)
             
             # Create filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -183,3 +187,17 @@ class BaseTracer:
         
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop()
+
+    def _change_span_ids_to_int(self, trace):
+        # import pdb; pdb.set_trace()
+        id, parent_id = 1, 0
+        for span in trace.data[0]["spans"]:
+            span.id = id
+            span.parent_id = parent_id
+            id += 1
+            if span.type=="agent":
+                for children in span.data["children"]:
+                    children["id"] = id
+                    children["parent_id"] = span.id
+                    id += 1
+        return trace
