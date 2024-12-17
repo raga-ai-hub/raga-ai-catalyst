@@ -235,5 +235,5 @@ class Trace:
     start_time: str
     end_time: str
     metadata: Metadata
-    data: List[Component]
+    data: List[Dict[str, Any]]
     replays: Optional[Dict[str, Any]]

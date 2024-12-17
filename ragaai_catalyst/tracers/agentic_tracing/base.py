@@ -35,6 +35,10 @@ class BaseTracer:
         self.trace_id = str(uuid.uuid4())
         self.start_time = datetime.now().isoformat()
         self.components: List[Component] = []
+        self.data_key = [{"start_time": self.start_time, 
+                        "end_time": "",
+                        "spans": self.components
+                        }]
         
     def _get_system_info(self) -> SystemInfo:
         # Get OS info
@@ -131,13 +135,14 @@ class BaseTracer:
             start_time=self.start_time,
             end_time="",  # Will be set when trace is stopped
             metadata=metadata,
-            data=self.components,
+            data=self.data_key,
             replays={"source": None}
         )
         
     def stop(self):
         """Stop the trace and save to JSON file"""
         if self.trace:
+            self.trace.data[0]["end_time"] = datetime.now().isoformat()
             self.trace.end_time = datetime.now().isoformat()
             
             # Create filename with timestamp
