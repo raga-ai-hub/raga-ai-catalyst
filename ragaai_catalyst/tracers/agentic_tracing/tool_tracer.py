@@ -43,7 +43,7 @@ class ToolTracerMixin:
         if not self.is_active:
             return func(*args, **kwargs)
 
-        start_time = datetime.now()
+        start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = self._trace_sync_tool_execution.hash_id
@@ -56,7 +56,7 @@ class ToolTracerMixin:
             result = func(*args, **kwargs)
 
             # Calculate resource usage
-            end_time = datetime.now()
+            end_time = datetime.now().astimezone()
             end_memory = psutil.Process().memory_info().rss
             memory_used = max(0, end_memory - start_memory)
 
@@ -91,6 +91,8 @@ class ToolTracerMixin:
             # End tracking network calls for this component
             self.end_component(component_id)
             
+            end_time = datetime.now().astimezone()
+            
             tool_component = self.create_tool_component(
                 component_id=component_id,
                 hash_id=hash_id,
@@ -99,7 +101,7 @@ class ToolTracerMixin:
                 version=version,
                 memory_used=0,
                 start_time=start_time,
-                end_time=datetime.now(),
+                end_time=end_time,
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=None,
                 error=error_component
@@ -113,7 +115,7 @@ class ToolTracerMixin:
         if not self.is_active:
             return await func(*args, **kwargs)
 
-        start_time = datetime.now()
+        start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = self._trace_tool_execution.hash_id
@@ -123,7 +125,7 @@ class ToolTracerMixin:
             result = await func(*args, **kwargs)
 
             # Calculate resource usage
-            end_time = datetime.now()
+            end_time = datetime.now().astimezone()
             end_memory = psutil.Process().memory_info().rss
             memory_used = max(0, end_memory - start_memory)
 
@@ -152,6 +154,8 @@ class ToolTracerMixin:
                 "details": {}
             }
             
+            end_time = datetime.now().astimezone()
+            
             tool_component = self.create_tool_component(
                 component_id=component_id,
                 hash_id=hash_id,
@@ -159,7 +163,7 @@ class ToolTracerMixin:
                 tool_type=tool_type,
                 version=version,
                 start_time=start_time,
-                end_time=datetime.now(),
+                end_time=end_time,
                 memory_used=0,
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=None,

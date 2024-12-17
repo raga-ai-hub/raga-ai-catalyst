@@ -98,18 +98,48 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         total_cost = 0.0
         total_tokens = 0
         
-        for component in self.components:  # Using self.components from BaseTracer
-            if component.type == "llm":
-                if hasattr(component, 'info'):
-                    if hasattr(component.info, 'token_usage'):
-                        total_tokens += component.info.token_usage.total_tokens
-                    if hasattr(component.info, 'cost'):
-                        total_cost += component.info.cost.total_cost
+        def process_component(component):
+            nonlocal total_cost, total_tokens
+            # Convert component to dict if it's an object
+            comp_dict = component.__dict__ if hasattr(component, '__dict__') else component
+            
+            if comp_dict.get('type') == "llm":
+                info = comp_dict.get('info', {})
+                if isinstance(info, dict):
+                    # Extract cost
+                    cost_info = info.get('cost', {})
+                    if isinstance(cost_info, dict):
+                        total_cost += cost_info.get('total_cost', 0)
+                    
+                    # Extract tokens
+                    token_info = info.get('tokens', {})
+                    if isinstance(token_info, dict):
+                        total_tokens += token_info.get('total_tokens', 0)
+                    else:
+                        token_info = info.get('token_usage', {})
+                        if isinstance(token_info, dict):
+                            total_tokens += token_info.get('total_tokens', 0)
+            
+            # Process children if they exist
+            data = comp_dict.get('data', {})
+            if isinstance(data, dict):
+                children = data.get('children', [])
+                if children:
+                    for child in children:
+                        process_component(child)
+        
+        # Process all root components
+        for component in self.components:
+            process_component(component)
         
         # Update metadata in trace
         if hasattr(self, 'trace'):
-            self.trace.metadata.total_cost = total_cost
-            self.trace.metadata.total_tokens = total_tokens
+            if isinstance(self.trace.metadata, dict):
+                self.trace.metadata['total_cost'] = total_cost
+                self.trace.metadata['total_tokens'] = total_tokens
+            else:
+                self.trace.metadata.total_cost = total_cost
+                self.trace.metadata.total_tokens = total_tokens
 
     def add_component(self, component_data: dict):
         """Add a component to the trace data"""

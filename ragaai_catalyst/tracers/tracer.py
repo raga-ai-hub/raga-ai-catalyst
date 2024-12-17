@@ -58,12 +58,15 @@ class Tracer(AgenticTracing):
         self.dataset_name = dataset_name
         self.tracer_type = tracer_type
         self.metadata = self._improve_metadata(metadata, tracer_type)
+        self.metadata["total_cost"] = 0.0
+        self.metadata["total_tokens"] = 0
         self.pipeline = pipeline
         self.description = description
         self.upload_timeout = upload_timeout
         self.base_url = f"{RagaAICatalyst.BASE_URL}"
         self.timeout = 10
         self.num_projects = 100
+        self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
         try:
             response = requests.get(
@@ -272,6 +275,7 @@ class Tracer(AgenticTracing):
         # Reset instrumentation flag
         self.is_instrumented = False
         # Note: We're not resetting all attributes here to allow for upload status checking
+
     def _pass_user_data(self):
         return {"project_name":self.project_name, 
                 "project_id": self.project_id,

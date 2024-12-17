@@ -21,6 +21,8 @@ class LLMTracerMixin:
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
         self.component_network_calls = {}  
         self.current_component_id = None  
+        self.total_tokens = 0
+        self.total_cost = 0.0
         # Apply decorator to trace_llm_call method
         self.trace_llm_call = mydecorator(self.trace_llm_call)
 
@@ -257,54 +259,55 @@ class LLMTracerMixin:
         """Stop tracking network calls for a component"""
         self.current_component_id = None
 
-    def track_network_call(self, request, response, error=None):
-        """Track a network call for the current component"""
-        if self.current_component_id is None:
-            return
+    # def track_network_call(self, request, response, error=None):
+    #     """Track a network call for the current component"""
+    #     if self.current_component_id is None:
+    #         return
 
-        start_time = getattr(request, '_start_time', datetime.now())
-        end_time = datetime.now()
-        response_time = (end_time - start_time).total_seconds()
+    #     start_time = getattr(request, '_start_time', datetime.now())
+    #     end_time = datetime.now()
+    #     response_time = (end_time - start_time).total_seconds()
 
-        # Calculate bytes sent/received
-        request_body = getattr(request, 'body', None)
-        bytes_sent = len(str(request_body).encode('utf-8')) if request_body else 0
-        response_body = getattr(response, 'text', None)
-        bytes_received = len(str(response_body).encode('utf-8')) if response_body else 0
+    #     # Calculate bytes sent/received
+    #     request_body = getattr(request, 'body', None)
+    #     bytes_sent = len(str(request_body).encode('utf-8')) if request_body else 0
+    #     response_body = getattr(response, 'text', None)
+    #     bytes_received = len(str(response_body).encode('utf-8')) if response_body else 0
 
-        # Extract URL components
-        url = str(request.url) if hasattr(request, 'url') else None
-        protocol = url.split('://')[0] if url else None
+    #     # Extract URL components
+    #     url = str(request.url) if hasattr(request, 'url') else None
+    #     protocol = url.split('://')[0] if url else None
 
-        network_call = {
-            "url": url,
-            "method": request.method.lower() if hasattr(request, 'method') else None,
-            "status_code": response.status_code if hasattr(response, 'status_code') else None,
-            "response_time": response_time,
-            "bytes_sent": bytes_sent,
-            "bytes_received": bytes_received,
-            "protocol": protocol,
-            "connection_id": str(uuid.uuid4()),
-            "parent_id": None,
-            "request": {
-                "headers": dict(request.headers) if hasattr(request, 'headers') else {},
-                "body": request_body
-            },
-            "response": {
-                "headers": dict(response.headers) if hasattr(response, 'headers') else {},
-                "body": response_body
-            } if response else None,
-            "error": str(error) if error else None
-        }
+    #     network_call = {
+    #         "url": url,
+    #         "method": request.method.lower() if hasattr(request, 'method') else None,
+    #         "status_code": response.status_code if hasattr(response, 'status_code') else None,
+    #         "response_time": response_time,
+    #         "bytes_sent": bytes_sent,
+    #         "bytes_received": bytes_received,
+    #         "protocol": protocol,
+    #         "connection_id": str(uuid.uuid4()),
+    #         "parent_id": None,
+    #         "request": {
+    #             "headers": dict(request.headers) if hasattr(request, 'headers') else {},
+    #             "body": request_body
+    #         },
+    #         "response": {
+    #             "headers": dict(response.headers) if hasattr(response, 'headers') else {},
+    #             "body": response_body
+    #         } if response else None,
+    #         "error": str(error) if error else None
+    #     }
 
-        self.component_network_calls[self.current_component_id].append(network_call)
+    #     self.component_network_calls[self.current_component_id].append(network_call)
 
     def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
         if not self.is_active:
             return original_func(*args, **kwargs)
         
-        start_time = datetime.now()
+        # Use datetime with timezone info
+        start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = self.trace_llm_call.hash_id  # Get hash_id from decorator
@@ -334,27 +337,53 @@ class LLMTracerMixin:
             # Get output data from LLM response
             output_data = extract_llm_output(result)
 
-            end_time = datetime.now()
+            end_time = datetime.now().astimezone()
 
             # Stop tracking network calls
             self.end_component(component_id)
 
+            # Create interactions with timezone-aware timestamps
+            interactions = [
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "input",
+                    "timestamp": start_time.isoformat(),
+                    "content": input_data
+                },
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "output",
+                    "timestamp": end_time.isoformat(),
+                    "content": output_data.output_response if output_data else None
+                }
+            ]
+
             # Create component with simplified data structure
-            component = self.create_llm_component(
-                component_id=component_id,
-                hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
-                start_time=start_time,
-                end_time=end_time,
-                error=None,
-                llm_type="llm",
-                version="1.0.0",
-                memory_used=memory_used,
-                cost=cost,
-                tokens=token_usage,
-                input_data=input_data,
-                output_data=output_data
-            )
+            component = {
+                "id": component_id,
+                "hash_id": hash_id,
+                "source_hash_id": None,
+                "type": "llm",
+                "name": self.current_llm_call_name.get(),
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "error": None,
+                "parent_id": self.current_agent_id.get(),
+                "info": {
+                    "llm_type": "llm",
+                    "version": "1.0.0",
+                    "memory_used": memory_used,
+                    "cost": cost,
+                    "tokens": token_usage
+                },
+                "data": {
+                    "input": input_data,
+                    "output": output_data.output_response if output_data else None,
+                    "memory_used": memory_used
+                },
+                "network_calls": self.component_network_calls.get(component_id, []),
+                "interactions": interactions
+            }
 
             self.add_component(component)
             return result
@@ -363,7 +392,7 @@ class LLMTracerMixin:
             # Stop tracking network calls in case of error
             self.end_component(component_id)
             
-            end_time = datetime.now()
+            end_time = datetime.now().astimezone()
             
             # Create error component
             error_component = {
@@ -373,22 +402,48 @@ class LLMTracerMixin:
                 "details": getattr(e, '__dict__', {})
             }
 
+            # Create interactions with timezone-aware timestamps for error case
+            interactions = [
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "input",
+                    "timestamp": start_time.isoformat(),
+                    "content": kwargs.get("messages", [])
+                },
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "output",
+                    "timestamp": end_time.isoformat(),
+                    "content": None
+                }
+            ]
+
             # Create error trace component
-            component = self.create_llm_component(
-                component_id=component_id,
-                hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
-                start_time=start_time,
-                end_time=end_time,
-                error=error_component,
-                llm_type="llm",
-                version="1.0.0",
-                memory_used=0,
-                cost={"prompt_cost": 0.0, "completion_cost": 0.0, "total_cost": 0.0},
-                tokens={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-                input_data=input_data,
-                output_data=None
-            )
+            component = {
+                "id": component_id,
+                "hash_id": hash_id,
+                "source_hash_id": None,
+                "type": "llm",
+                "name": self.current_llm_call_name.get(),
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "error": error_component,
+                "parent_id": self.current_agent_id.get(),
+                "info": {
+                    "llm_type": "llm",
+                    "version": "1.0.0",
+                    "memory_used": 0,
+                    "cost": {"prompt_cost": 0.0, "completion_cost": 0.0, "total_cost": 0.0},
+                    "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                },
+                "data": {
+                    "input": kwargs.get("messages", []),
+                    "output": None,
+                    "memory_used": 0
+                },
+                "network_calls": self.component_network_calls.get(component_id, []),
+                "interactions": interactions
+            }
             
             self.add_component(component)
             raise
@@ -442,3 +497,60 @@ class LLMTracerMixin:
         elif isinstance(data, tuple):
             return tuple(self._sanitize_api_keys(item) for item in data)
         return data
+
+    def _create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, usage=None, error=None):
+        cost = None
+        tokens = None
+        
+        if usage:
+            tokens = {
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0)
+            }
+            cost = calculate_cost(usage)
+            
+            # Update total metrics
+            self.total_tokens += tokens["total_tokens"]
+            self.total_cost += cost["total"]
+
+        component = {
+            "id": component_id,
+            "hash_id": hash_id,
+            "source_hash_id": None,
+            "type": "llm",
+            "name": name,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "error": error,
+            "parent_id": self.current_agent_id.get(),
+            "info": {
+                "llm_type": llm_type,
+                "version": version,
+                "memory_used": memory_used,
+                "cost": cost,
+                "tokens": tokens
+            },
+            "data": {
+                "input": input_data,
+                "output": output_data.output_response if output_data else None,
+                "memory_used": memory_used
+            },
+            "network_calls": self.component_network_calls.get(component_id, []),
+            "interactions": [
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "input",
+                    "timestamp": start_time.isoformat(),
+                    "content": input_data
+                },
+                {
+                    "id": f"int_{uuid.uuid4()}",
+                    "interaction_type": "output",
+                    "timestamp": end_time.isoformat(),
+                    "content": output_data.output_response if output_data else None
+                }
+            ]
+        }
+
+        return component
