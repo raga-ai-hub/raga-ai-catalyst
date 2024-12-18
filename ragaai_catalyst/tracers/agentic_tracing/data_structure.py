@@ -80,8 +80,8 @@ class Resources:
 
 @dataclass
 class Metadata:
-    total_cost: float
-    total_tokens: int
+    cost: float
+    tokens: int
     system_info: SystemInfo
     resources: Resources
 
