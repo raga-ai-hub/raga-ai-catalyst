@@ -181,7 +181,7 @@ class AgentComponent:
     data: Dict[str, Any] = None
     network_calls: List[NetworkCall] = None
     interactions: List[Interaction] = None
-    children: List['Component'] = None
+    # children: List['Component'] = None
 
 @dataclass
 class ToolComponent:
