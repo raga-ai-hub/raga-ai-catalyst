@@ -120,8 +120,8 @@ class BaseTracer:
     def start(self):
         """Initialize a new trace"""
         metadata = Metadata(
-            cost=0.0,
-            tokens=0,
+            cost={},
+            tokens={},
             system_info=self._get_system_info(),
             resources=self._get_resources()
         )

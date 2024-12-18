@@ -80,8 +80,8 @@ class Resources:
 
 @dataclass
 class Metadata:
-    cost: float
-    tokens: int
+    cost: Dict[str, Any]
+    tokens: Dict[str, Any]
     system_info: SystemInfo
     resources: Resources
 
