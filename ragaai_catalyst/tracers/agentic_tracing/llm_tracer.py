@@ -9,7 +9,7 @@ import uuid
 import os
 import contextvars
 
-from .unique_decorator import mydecorator
+from .unique_decorator import generate_unique_hash  # Import the hash generation function directly
 from .utils.trace_utils import calculate_cost, load_model_costs
 from .utils.llm_utils import extract_llm_output
 
@@ -24,7 +24,7 @@ class LLMTracerMixin:
         self.total_tokens = 0
         self.total_cost = 0.0
         # Apply decorator to trace_llm_call method
-        self.trace_llm_call = mydecorator(self.trace_llm_call)
+        # self.trace_llm_call = mydecorator(self.trace_llm_call)
 
     def instrument_llm_calls(self):
         # Use wrapt to register post-import hooks
@@ -305,12 +305,12 @@ class LLMTracerMixin:
         """Trace an LLM API call"""
         if not self.is_active:
             return original_func(*args, **kwargs)
-        
+                
         # Use datetime with timezone info
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self.trace_llm_call.hash_id  # Get hash_id from decorator
+        hash_id = generate_unique_hash(original_func, *args, **kwargs)  # Get hash_id from decorator
 
         # Start tracking network calls for this component
         self.start_component(component_id)
