@@ -21,6 +21,27 @@ from .data_structure import (
 from ..upload_traces import UploadTraces
 from ...ragaai_catalyst import RagaAICatalyst
 
+class TracerJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, bytes):
+            try:
+                return obj.decode('utf-8')
+            except UnicodeDecodeError:
+                return str(obj)  # Fallback to string representation
+        if hasattr(obj, 'to_dict'):  # Handle objects with to_dict method
+            return obj.to_dict()
+        if hasattr(obj, '__dict__'):
+            # Filter out None values and handle nested serialization
+            return {k: v for k, v in obj.__dict__.items() 
+                   if v is not None and not k.startswith('_')}
+        try:
+            # Try to convert to a basic type
+            return str(obj)
+        except:
+            return None  # Last resort: return None instead of failing
+
 class BaseTracer:
     def __init__(self, user_details):
         self.user_details = user_details
@@ -138,7 +159,7 @@ class BaseTracer:
         
     def stop(self):
         """Stop the trace and save to JSON file"""
-        if self.trace:
+        if hasattr(self, 'trace'):
             self.trace.data[0]["end_time"] = datetime.now().isoformat()
             self.trace.end_time = datetime.now().isoformat()
 
@@ -153,9 +174,9 @@ class BaseTracer:
             filename = self.trace.id + ".json"
             filepath = self.traces_dir / filename
             
-            # Save to JSON file
+            # Save to JSON file using custom encoder
             with open(filepath, 'w') as f:
-                json.dump(self.trace.__dict__, f, default=lambda o: o.__dict__, indent=2)
+                json.dump(self.trace.__dict__, f, cls=TracerJSONEncoder, indent=2)
                 
             print(f"Trace saved to {filepath}")
             # import pdb; pdb.set_trace()

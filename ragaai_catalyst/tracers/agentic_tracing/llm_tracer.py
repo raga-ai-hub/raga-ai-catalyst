@@ -33,6 +33,10 @@ class LLMTracerMixin:
         wrapt.register_post_import_hook(self.patch_anthropic_methods, "anthropic")
         wrapt.register_post_import_hook(self.patch_google_genai_methods, "google.generativeai")
         wrapt.register_post_import_hook(self.patch_vertex_ai_methods, "vertexai")
+        
+        # Add hooks for LangChain integrations
+        wrapt.register_post_import_hook(self.patch_langchain_google_methods, "langchain_google_vertexai")
+        wrapt.register_post_import_hook(self.patch_langchain_google_methods, "langchain_google_genai")
 
     def patch_openai_methods(self, module):
         if hasattr(module, "OpenAI"):
@@ -48,14 +52,42 @@ class LLMTracerMixin:
             self.wrap_anthropic_client_methods(client_class)
 
     def patch_google_genai_methods(self, module):
+        # Patch direct Google GenerativeAI usage
         if hasattr(module, "GenerativeModel"):
             model_class = getattr(module, "GenerativeModel")
             self.wrap_genai_model_methods(model_class)
+        
+        # Patch LangChain integration
+        if hasattr(module, "ChatGoogleGenerativeAI"):
+            chat_class = getattr(module, "ChatGoogleGenerativeAI")
+            # LangChain v0.2+ uses invoke/ainvoke
+            self.wrap_method(chat_class, "_generate")
+            if hasattr(chat_class, "_agenerate"):
+                self.wrap_method(chat_class, "_agenerate")
+            # Fallback for completion methods
+            if hasattr(chat_class, "complete"):
+                self.wrap_method(chat_class, "complete")
+            if hasattr(chat_class, "acomplete"):
+                self.wrap_method(chat_class, "acomplete")
 
     def patch_vertex_ai_methods(self, module):
+        # Patch direct VertexAI usage
         if hasattr(module, "GenerativeModel"):
             model_class = getattr(module, "GenerativeModel")
             self.wrap_vertex_model_methods(model_class)
+            
+        # Patch LangChain integration
+        if hasattr(module, "ChatVertexAI"):
+            chat_class = getattr(module, "ChatVertexAI")
+            # LangChain v0.2+ uses invoke/ainvoke
+            self.wrap_method(chat_class, "_generate")
+            if hasattr(chat_class, "_agenerate"):
+                self.wrap_method(chat_class, "_agenerate")
+            # Fallback for completion methods
+            if hasattr(chat_class, "complete"):
+                self.wrap_method(chat_class, "complete")
+            if hasattr(chat_class, "acomplete"):
+                self.wrap_method(chat_class, "acomplete")
 
     def wrap_openai_client_methods(self, client_class):
         original_init = client_class.__init__
@@ -99,15 +131,42 @@ class LLMTracerMixin:
         @functools.wraps(original_init)
         def patched_init(model_self, *args, **kwargs):
             original_init(model_self, *args, **kwargs)
-            self.wrap_method(model_self, "generate_content")
-            if hasattr(model_self, "generate_content_async"):
-                self.wrap_method(model_self, "generate_content_async")
+            self.wrap_method(model_self, "predict")
+            self.wrap_method(model_self, "predict_streaming")
+            if hasattr(model_self, "predict_async"):
+                self.wrap_method(model_self, "predict_async")
 
         setattr(model_class, "__init__", patched_init)
 
     def patch_litellm_methods(self, module):
         self.wrap_method(module, "completion")
         self.wrap_method(module, "acompletion")
+
+    def patch_langchain_google_methods(self, module):
+        """Patch LangChain's Google integration methods"""
+        if hasattr(module, "ChatVertexAI"):
+            chat_class = getattr(module, "ChatVertexAI")
+            # LangChain v0.2+ uses invoke/ainvoke
+            self.wrap_method(chat_class, "invoke")
+            if hasattr(chat_class, "ainvoke"):
+                self.wrap_method(chat_class, "ainvoke")
+            # Fallback for completion methods
+            if hasattr(chat_class, "complete"):
+                self.wrap_method(chat_class, "complete")
+            if hasattr(chat_class, "acomplete"):
+                self.wrap_method(chat_class, "acomplete")
+
+        if hasattr(module, "ChatGoogleGenerativeAI"):
+            chat_class = getattr(module, "ChatGoogleGenerativeAI")
+            # LangChain v0.2+ uses invoke/ainvoke
+            self.wrap_method(chat_class, "invoke")
+            if hasattr(chat_class, "ainvoke"):
+                self.wrap_method(chat_class, "ainvoke")
+            # Fallback for completion methods
+            if hasattr(chat_class, "complete"):
+                self.wrap_method(chat_class, "complete")
+            if hasattr(chat_class, "acomplete"):
+                self.wrap_method(chat_class, "acomplete")
 
     def wrap_method(self, obj, method_name):
         original_method = getattr(obj, method_name)
@@ -122,17 +181,31 @@ class LLMTracerMixin:
 
     def _extract_model_name(self, kwargs):
         """Extract model name from kwargs or result"""
+        # First try direct model parameter
         model = kwargs.get("model", "")
+        
         if not model:
-            # Try to extract from messages
-            if "messages" in kwargs:
-                messages = kwargs["messages"]
-                if messages and isinstance(messages, list) and messages[0].get("role") == "system":
-                    model = messages[0].get("model", "")
-            # Try to extract from GenerativeModel instance
-            elif hasattr(kwargs.get("self", None), "model_name"):
-                model = kwargs["self"].model_name
-        return model or "unknown"
+            # Try to get from instance
+            instance = kwargs.get("self", None)
+            if instance:
+                # Try model_name first (Google format)
+                if hasattr(instance, "model_name"):
+                    model = instance.model_name
+                # Try model attribute
+                elif hasattr(instance, "model"):
+                    model = instance.model
+        
+        # Normalize Google model names
+        if model and isinstance(model, str):
+            model = model.lower()
+            if "gemini-1.5-flash" in model:
+                return "gemini-1.5-flash"
+            if "gemini-1.5-pro" in model:
+                return "gemini-1.5-pro"
+            if "gemini-pro" in model:
+                return "gemini-pro"
+        
+        return model or "default"
 
     def _extract_parameters(self, kwargs, result=None):
         """Extract parameters from kwargs or result"""
@@ -165,17 +238,23 @@ class LLMTracerMixin:
             }
         
         # Handle Google GenerativeAI format
-        if hasattr(result, "parts"):
-            total_tokens = sum(len(part.text.split()) for part in result.parts)
-            return {
-                "prompt_tokens": 0,  # Google AI doesn't provide this breakdown
-                "completion_tokens": total_tokens,
-                "total_tokens": total_tokens
-            }
-            
+        if hasattr(result, "result"):
+            # Access the underlying protobuf message
+            metadata = getattr(result.result, "usage_metadata", None)
+            if metadata:
+                return {
+                    "prompt_tokens": getattr(metadata, "prompt_token_count", 0),
+                    "completion_tokens": getattr(metadata, "candidates_token_count", 0),
+                    "total_tokens": getattr(metadata, "total_token_count", 0)
+                }
+        
         # Handle Vertex AI format
         if hasattr(result, "text"):
-            total_tokens = len(result.text.split())
+            # For LangChain ChatVertexAI
+            total_tokens = getattr(result, "token_count", 0)
+            if not total_tokens and hasattr(result, "_raw_response"):
+                # Try to get from raw response
+                total_tokens = getattr(result._raw_response, "token_count", 0)
             return {
                 "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
                 "completion_tokens": total_tokens,
@@ -312,7 +391,6 @@ class LLMTracerMixin:
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash(original_func, *args, **kwargs)  # Get hash_id from decorator
 
-        # Start tracking network calls for this component
         self.start_component(component_id)
 
         try:
@@ -323,42 +401,28 @@ class LLMTracerMixin:
             end_memory = psutil.Process().memory_info().rss
             memory_used = max(0, end_memory - start_memory)
 
-            # Extract model and parameters
+            # Extract model name before processing result
             model_name = self._extract_model_name(kwargs)
-            parameters = self._extract_parameters(kwargs, result)
             
-            # Extract token usage and calculate cost
-            token_usage = self._extract_token_usage(result)
+            # For Google API, get the actual result object
+            if hasattr(result, "result"):
+                processed_result = result.result
+            else:
+                processed_result = result
+            
+            # Extract parameters and usage
+            parameters = self._extract_parameters(kwargs, processed_result)
+            token_usage = self._extract_token_usage(result)  # Pass original result for token extraction
             cost = self._calculate_cost(token_usage, model_name)
 
-            # Format input data to only include messages
+            # Get input/output data
             input_data = kwargs.get("messages", [])
-            
-            # Get output data from LLM response
             output_data = extract_llm_output(result)
 
             end_time = datetime.now().astimezone()
-
-            # Stop tracking network calls
             self.end_component(component_id)
 
-            # Create interactions with timezone-aware timestamps
-            interactions = [
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "input",
-                    "timestamp": start_time.isoformat(),
-                    "content": input_data
-                },
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "output",
-                    "timestamp": end_time.isoformat(),
-                    "content": output_data.output_response if output_data else None
-                }
-            ]
-
-            # Create component with simplified data structure
+            # Create component
             component = {
                 "id": component_id,
                 "hash_id": hash_id,
@@ -374,7 +438,9 @@ class LLMTracerMixin:
                     "version": "1.0.0",
                     "memory_used": memory_used,
                     "cost": cost,
-                    "tokens": token_usage
+                    "tokens": token_usage,
+                    "model": model_name,  # Add model name to info
+                    "parameters": parameters  # Add parameters to info
                 },
                 "data": {
                     "input": input_data,
@@ -382,71 +448,28 @@ class LLMTracerMixin:
                     "memory_used": memory_used
                 },
                 "network_calls": self.component_network_calls.get(component_id, []),
-                "interactions": interactions
+                "interactions": [
+                    {
+                        "id": f"int_{uuid.uuid4()}",
+                        "interaction_type": "input",
+                        "timestamp": start_time.isoformat(),
+                        "content": input_data
+                    },
+                    {
+                        "id": f"int_{uuid.uuid4()}",
+                        "interaction_type": "output",
+                        "timestamp": end_time.isoformat(),
+                        "content": output_data.output_response if output_data else None
+                    }
+                ]
             }
 
             self.add_component(component)
             return result
 
         except Exception as e:
-            # Stop tracking network calls in case of error
             self.end_component(component_id)
-            
-            end_time = datetime.now().astimezone()
-            
-            # Create error component
-            error_component = {
-                "code": getattr(e, 'code', 500),
-                "type": type(e).__name__,
-                "message": str(e),
-                "details": getattr(e, '__dict__', {})
-            }
-
-            # Create interactions with timezone-aware timestamps for error case
-            interactions = [
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "input",
-                    "timestamp": start_time.isoformat(),
-                    "content": kwargs.get("messages", [])
-                },
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "output",
-                    "timestamp": end_time.isoformat(),
-                    "content": None
-                }
-            ]
-
-            # Create error trace component
-            component = {
-                "id": component_id,
-                "hash_id": hash_id,
-                "source_hash_id": None,
-                "type": "llm",
-                "name": self.current_llm_call_name.get(),
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "error": error_component,
-                "parent_id": self.current_agent_id.get(),
-                "info": {
-                    "llm_type": "llm",
-                    "version": "1.0.0",
-                    "memory_used": 0,
-                    "cost": {"prompt_cost": 0.0, "completion_cost": 0.0, "total_cost": 0.0},
-                    "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-                },
-                "data": {
-                    "input": kwargs.get("messages", []),
-                    "output": None,
-                    "memory_used": 0
-                },
-                "network_calls": self.component_network_calls.get(component_id, []),
-                "interactions": interactions
-            }
-            
-            self.add_component(component)
-            raise
+            raise e
 
     def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
         def decorator(func_or_class):
@@ -554,3 +577,49 @@ class LLMTracerMixin:
         }
 
         return component
+
+def extract_llm_output(result):
+    """Extract output from LLM response"""
+    class OutputResponse:
+        def __init__(self, output_response):
+            self.output_response = output_response
+
+    # Handle Google GenerativeAI format
+    if hasattr(result, "result"):
+        candidates = getattr(result.result, "candidates", [])
+        output = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            if content and hasattr(content, "parts"):
+                for part in content.parts:
+                    if hasattr(part, "text"):
+                        output.append({
+                            "content": part.text,
+                            "role": getattr(content, "role", "assistant"),
+                            "finish_reason": getattr(candidate, "finish_reason", None)
+                        })
+        return OutputResponse(output)
+    
+    # Handle Vertex AI format
+    if hasattr(result, "text"):
+        return OutputResponse([{
+            "content": result.text,
+            "role": "assistant"
+        }])
+    
+    # Handle OpenAI format
+    if hasattr(result, "choices"):
+        return OutputResponse([{
+            "content": choice.message.content,
+            "role": choice.message.role
+        } for choice in result.choices])
+    
+    # Handle Anthropic format
+    if hasattr(result, "completion"):
+        return OutputResponse([{
+            "content": result.completion,
+            "role": "assistant"
+        }])
+    
+    # Default case
+    return OutputResponse(str(result))
