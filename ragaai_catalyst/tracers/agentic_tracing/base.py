@@ -49,10 +49,6 @@ class BaseTracer:
         self.dataset_name = self.user_details['dataset_name']  # Access the dataset_name
         self.project_id = self.user_details['project_id']  # Access the project_id
         
-        # Create traces directory if it doesn't exist
-        self.traces_dir = Path("traces")
-        self.traces_dir.mkdir(exist_ok=True)
-        
         # Initialize trace data
         self.trace_id = str(uuid.uuid4())
         self.start_time = datetime.now().isoformat()
@@ -145,8 +141,8 @@ class BaseTracer:
     def start(self):
         """Initialize a new trace"""
         metadata = Metadata(
-            total_cost=0.0,
-            total_tokens=0,
+            cost={},
+            tokens={},
             system_info=self._get_system_info(),
             resources=self._get_resources()
         )
@@ -170,10 +166,12 @@ class BaseTracer:
             # Change span ids to int
             self.trace = self._change_span_ids_to_int(self.trace)
             self.trace = self._change_agent_intput_output(self.trace)
+            self.trace = self._extract_cost_tokens(self.trace)
             
-            # Create filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{self.project_name}_{timestamp}.json"
+            # Create traces directory if it doesn't exist
+            self.traces_dir = Path("traces")
+            self.traces_dir.mkdir(exist_ok=True)
+            filename = self.trace.id + ".json"
             filepath = self.traces_dir / filename
             
             # Save to JSON file using custom encoder
@@ -232,4 +230,41 @@ class BaseTracer:
                 if childrens != []:
                     span.data["input"] = childrens[0]["data"]["input"]
                     span.data["output"] = childrens[-1]["data"]["output"]
+        return trace
+    
+    def _extract_cost_tokens(self, trace):
+        cost = {}
+        tokens = {}
+        for span in trace.data[0]["spans"]:
+            if span.type == "llm":
+                info = span.info
+                if isinstance(info, dict):
+                    cost_info = info.get('cost', {})
+                    for key, value in cost_info.items():
+                        if key not in cost:
+                            cost[key] = 0 
+                        cost[key] += value
+                    token_info = info.get('tokens', {})
+                    for key, value in token_info.items():
+                        if key not in tokens:
+                            tokens[key] = 0
+                        tokens[key] += value
+            if span.type == "agent":
+                for children in span.data["children"]:
+                    if children["type"] != "llm":
+                        continue
+                    info = children["info"]
+                    if isinstance(info, dict):
+                        cost_info = info.get('cost', {})
+                        for key, value in cost_info.items():
+                            if key not in cost:
+                                cost[key] = 0 
+                            cost[key] += value
+                        token_info = info.get('tokens', {})
+                        for key, value in token_info.items():
+                            if key not in tokens:
+                                tokens[key] = 0
+                            tokens[key] += value
+        trace.metadata.cost = cost
+        trace.metadata.tokens = tokens
         return trace
