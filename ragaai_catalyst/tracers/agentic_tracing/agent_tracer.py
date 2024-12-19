@@ -18,34 +18,34 @@ class AgentTracerMixin:
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
-        self._trace_sync_agent_execution = mydecorator(self._trace_sync_agent_execution)
-        self._trace_agent_execution = mydecorator(self._trace_agent_execution)
 
 
     def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
         def decorator(func):
             # Check if the function is async
+            decorated_func = mydecorator(func)
+
             is_async = asyncio.iscoroutinefunction(func)
 
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await self._trace_agent_execution(
-                    func, name, agent_type, version, capabilities, *args, **kwargs
+                    func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
                 )
 
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return self._trace_sync_agent_execution(
-                    func, name, agent_type, version, capabilities, *args, **kwargs
+                    func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
                 )
 
             return async_wrapper if is_async else sync_wrapper
 
         return decorator
 
-    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
         """Synchronous version of agent tracing"""
         if not self.is_active:
             return func(*args, **kwargs)
@@ -53,7 +53,6 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_sync_agent_execution.hash_id
 
         # Initialize empty children list for this agent
         children_token = self.agent_children.set([])
@@ -145,7 +144,7 @@ class AgentTracerMixin:
             self.current_agent_name.reset(agent_name_token)
             self.agent_children.reset(children_token)
 
-    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
         """Asynchronous version of agent tracing"""
         if not self.is_active:
             return await func(*args, **kwargs)
@@ -153,7 +152,6 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_agent_execution.hash_id
 
         # Initialize empty children list for this agent
         children_token = self.agent_children.set([])

@@ -21,6 +21,7 @@ from .utils import get_unique_key
 from ..ragaai_catalyst import RagaAICatalyst
 from .agentic_tracing.agentic_tracing import AgenticTracing
 from .agentic_tracing.file_name_tracker import TrackName
+from .agentic_tracing.llm_tracer import LLMTracerMixin
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,14 @@ class Tracer(AgenticTracing):
         Returns:
             None
         """
-
+        # Set auto_instrument_llm to True to enable automatic LLM tracing
+        user_detail = {
+            "project_name": project_name,
+            "project_id": None,  # Will be set after project validation
+            "dataset_name": dataset_name,
+            "trace_user_detail": {"metadata": metadata} if metadata else {}
+        }
+        super().__init__(user_detail=user_detail, auto_instrument_llm=True)
         self.is_active = True
         self.project_name = project_name
         self.dataset_name = dataset_name
@@ -89,8 +97,9 @@ class Tracer(AgenticTracing):
             self.project_id = [
                 project["id"] for project in response.json()["data"]["content"] if project["name"] == project_name
             ][0]
-            super().__init__(user_detail=self._pass_user_data())
+            # super().__init__(user_detail=self._pass_user_data())
             self.file_tracker = TrackName()
+            self._pass_user_data()
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to retrieve projects list: {e}")
