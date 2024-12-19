@@ -12,10 +12,13 @@ import contextvars
 from .unique_decorator import mydecorator
 from .utils.trace_utils import calculate_cost, load_model_costs
 from .utils.llm_utils import extract_llm_output
+from .file_name_tracker import TrackName
+
 
 class LLMTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.patches = []
         self.model_costs = load_model_costs()
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
@@ -460,6 +463,7 @@ class LLMTracerMixin:
                         )
                 return func_or_class
             else:
+                @self.file_tracker.trace_decorator
                 @functools.wraps(func_or_class)
                 async def async_wrapper(*args, **kwargs):
                     token = self.current_llm_call_name.set(name)
@@ -468,6 +472,7 @@ class LLMTracerMixin:
                     finally:
                         self.current_llm_call_name.reset(token)
 
+                @self.file_tracker.trace_decorator
                 @functools.wraps(func_or_class)
                 def sync_wrapper(*args, **kwargs):
                     token = self.current_llm_call_name.set(name)

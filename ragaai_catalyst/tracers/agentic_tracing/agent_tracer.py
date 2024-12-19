@@ -7,10 +7,13 @@ from .unique_decorator import mydecorator
 
 import contextvars
 import asyncio
+from .file_name_tracker import TrackName
+
 
 class AgentTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.current_agent_id = contextvars.ContextVar("agent_id", default=None)
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
@@ -24,12 +27,14 @@ class AgentTracerMixin:
             # Check if the function is async
             is_async = asyncio.iscoroutinefunction(func)
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await self._trace_agent_execution(
                     func, name, agent_type, version, capabilities, *args, **kwargs
                 )
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return self._trace_sync_agent_execution(

@@ -6,10 +6,13 @@ from typing import Optional, Any, Dict, List
 from .unique_decorator import mydecorator
 import contextvars
 import asyncio
+from .file_name_tracker import TrackName
+
 
 class ToolTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
@@ -22,12 +25,14 @@ class ToolTracerMixin:
             # Check if the function is async
             is_async = asyncio.iscoroutinefunction(func)
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await self._trace_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return self._trace_sync_tool_execution(
