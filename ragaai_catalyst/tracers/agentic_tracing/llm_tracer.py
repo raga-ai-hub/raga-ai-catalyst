@@ -60,6 +60,16 @@ class LLMTracerMixin:
         # Patch LangChain integration
         if hasattr(module, "ChatGoogleGenerativeAI"):
             chat_class = getattr(module, "ChatGoogleGenerativeAI")
+            # Wrap invoke method to capture messages
+            original_invoke = chat_class.invoke
+            
+            def patched_invoke(self, messages, *args, **kwargs):
+                # Store messages in the instance for later use
+                self._last_messages = messages
+                return original_invoke(self, messages, *args, **kwargs)
+            
+            chat_class.invoke = patched_invoke
+            
             # LangChain v0.2+ uses invoke/ainvoke
             self.wrap_method(chat_class, "_generate")
             if hasattr(chat_class, "_agenerate"):
@@ -237,16 +247,14 @@ class LLMTracerMixin:
                 "total_tokens": getattr(usage, "total_tokens", 0)
             }
         
-        # Handle Google GenerativeAI format
-        if hasattr(result, "result"):
-            # Access the underlying protobuf message
-            metadata = getattr(result.result, "usage_metadata", None)
-            if metadata:
-                return {
-                    "prompt_tokens": getattr(metadata, "prompt_token_count", 0),
-                    "completion_tokens": getattr(metadata, "candidates_token_count", 0),
-                    "total_tokens": getattr(metadata, "total_token_count", 0)
-                }
+        # Handle Google GenerativeAI format with usage_metadata
+        if hasattr(result, "usage_metadata"):
+            metadata = result.usage_metadata
+            return {
+                "prompt_tokens": metadata.get("input_tokens", 0),
+                "completion_tokens": metadata.get("output_tokens", 0),
+                "total_tokens": metadata.get("total_tokens", 0)
+            }
         
         # Handle Vertex AI format
         if hasattr(result, "text"):
@@ -415,7 +423,7 @@ class LLMTracerMixin:
             cost = self._calculate_cost(token_usage, model_name)
 
             # Get input/output data
-            input_data = kwargs.get("messages", [])
+            input_data = self._extract_input_data(kwargs, result)
             output_data = extract_llm_output(result)
 
             end_time = datetime.now().astimezone()
@@ -470,6 +478,33 @@ class LLMTracerMixin:
             self.end_component(component_id)
             raise e
 
+    def _extract_input_data(self, kwargs, result):
+        """Extract input data from kwargs and result"""
+        # Try to get messages from instance
+        instance = kwargs.get("self")
+        if instance and hasattr(instance, "_last_messages"):
+            messages = instance._last_messages
+            if isinstance(messages, list):
+                return [{"role": msg[0], "content": msg[1]} if isinstance(msg, tuple) else msg 
+                       for msg in messages]
+            return messages
+        
+        # Try standard messages format (OpenAI/Anthropic)
+        messages = kwargs.get("messages", [])
+        if messages:
+            return messages
+
+        # Try Gemini format
+        if hasattr(result, "prompt"):
+            return [{"role": "user", "content": str(result.prompt)}]
+        
+        # Try content/prompt in kwargs
+        content = kwargs.get("content", kwargs.get("prompt", ""))
+        if content:
+            return [{"role": "user", "content": str(content)}]
+        
+        return []
+
     def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
         def decorator(func_or_class):
             if isinstance(func_or_class, type):
@@ -499,8 +534,6 @@ class LLMTracerMixin:
                         self.current_llm_call_name.reset(token)
 
                 return async_wrapper if asyncio.iscoroutinefunction(func_or_class) else sync_wrapper
-
-        return decorator
 
     def unpatch_llm_calls(self):
         """Remove all patches"""
