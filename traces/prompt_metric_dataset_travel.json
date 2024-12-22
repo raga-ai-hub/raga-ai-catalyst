@@ -1,0 +1,829 @@
+{
+  "id": "a756a31b-ce11-4e0e-9628-f790593e8f43",
+  "project_name": "prompt_metric_dataset",
+  "start_time": "2024-12-17T17:54:25.323156",
+  "end_time": "2024-12-17T17:55:15.713111",
+  "metadata": {
+    "total_cost": 0.0013900000000000002,
+    "total_tokens": 800,
+    "system_info": {
+      "id": "sys_a756a31b-ce11-4e0e-9628-f790593e8f43",
+      "os": {
+        "name": "Darwin",
+        "version": "Darwin Kernel Version 23.3.0: Wed Dec 20 21:30:44 PST 2023; root:xnu-10002.81.5~7/RELEASE_ARM64_T6000",
+        "platform": "arm64",
+        "kernel_version": "23.3.0"
+      },
+      "environment": {
+        "name": "Python",
+        "version": "3.10.16",
+        "packages": [
+          "deprecated==1.2.15",
+          "gputil==1.4.0",
+          "markdown==3.7",
+          "markupsafe==3.0.2",
+          "pypika==0.48.9",
+          "pyyaml==6.0.2",
+          "sqlalchemy==2.0.36",
+          "aiohappyeyeballs==2.4.4",
+          "aiohttp==3.11.10",
+          "aiosignal==1.3.2",
+          "annotated-types==0.7.0",
+          "anyio==4.7.0",
+          "appnope==0.1.4",
+          "asgiref==3.8.1",
+          "asttokens==3.0.0",
+          "async-timeout==4.0.3",
+          "attrs==24.2.0",
+          "backoff==2.2.1",
+          "bcrypt==4.2.1",
+          "beautifulsoup4==4.12.3",
+          "build==1.2.2.post1",
+          "cachetools==5.5.0",
+          "certifi==2024.8.30",
+          "cffi==1.17.1",
+          "charset-normalizer==3.4.0",
+          "chroma-hnswlib==0.7.6",
+          "chromadb==0.5.23",
+          "click==8.1.7",
+          "coloredlogs==15.0.1",
+          "comm==0.2.2",
+          "cryptography==43.0.3",
+          "dataclasses-json==0.6.7",
+          "debugpy==1.6.7",
+          "decorator==5.1.1",
+          "dirtyjson==1.0.8",
+          "distro==1.9.0",
+          "durationpy==0.9",
+          "exceptiongroup==1.2.2",
+          "executing==2.1.0",
+          "fastapi==0.115.6",
+          "filelock==3.16.1",
+          "flatbuffers==24.3.25",
+          "frozenlist==1.5.0",
+          "fsspec==2024.10.0",
+          "google-ai-generativelanguage==0.6.10",
+          "google-api-core==2.24.0",
+          "google-api-python-client==2.155.0",
+          "google-auth==2.37.0",
+          "google-auth-httplib2==0.2.0",
+          "google-generativeai==0.8.3",
+          "googleapis-common-protos==1.66.0",
+          "greenlet==3.1.1",
+          "groq==0.13.0",
+          "grpcio==1.68.1",
+          "grpcio-status==1.62.3",
+          "h11==0.14.0",
+          "httpcore==1.0.7",
+          "httplib2==0.22.0",
+          "httptools==0.6.4",
+          "httpx==0.28.1",
+          "httpx-sse==0.4.0",
+          "huggingface-hub==0.26.5",
+          "humanfriendly==10.0",
+          "idna==3.10",
+          "importlib-metadata==7.1.0",
+          "importlib-resources==6.4.5",
+          "ipykernel==6.29.5",
+          "ipython==8.30.0",
+          "jedi==0.19.2",
+          "jinja2==3.1.4",
+          "jiter==0.8.2",
+          "joblib==1.4.2",
+          "jsonpatch==1.33",
+          "jsonpointer==3.0.0",
+          "jsonschema==4.23.0",
+          "jsonschema-specifications==2024.10.1",
+          "jupyter-client==8.6.3",
+          "jupyter-core==5.7.2",
+          "kubernetes==31.0.0",
+          "langchain==0.3.12",
+          "langchain-chroma==0.1.4",
+          "langchain-community==0.3.12",
+          "langchain-core==0.3.25",
+          "langchain-openai==0.2.12",
+          "langchain-text-splitters==0.3.3",
+          "langsmith==0.2.3",
+          "litellm==1.51.1",
+          "llama-index==0.10.0",
+          "llama-index-agent-openai==0.1.7",
+          "llama-index-core==0.10.68.post1",
+          "llama-index-embeddings-openai==0.1.11",
+          "llama-index-legacy==0.9.48.post4",
+          "llama-index-llms-openai==0.1.31",
+          "llama-index-multi-modal-llms-openai==0.1.9",
+          "llama-index-program-openai==0.1.7",
+          "llama-index-question-gen-openai==0.1.3",
+          "llama-index-readers-file==0.1.33",
+          "markdown-it-py==3.0.0",
+          "marshmallow==3.23.1",
+          "matplotlib-inline==0.1.7",
+          "mdurl==0.1.2",
+          "mmh3==5.0.1",
+          "monotonic==1.6",
+          "mpmath==1.3.0",
+          "multidict==6.1.0",
+          "mypy-extensions==1.0.0",
+          "nest-asyncio==1.6.0",
+          "networkx==3.4.2",
+          "nltk==3.9.1",
+          "numpy==1.26.4",
+          "oauthlib==3.2.2",
+          "onnxruntime==1.20.1",
+          "openai==1.57.4",
+          "opentelemetry-api==1.25.0",
+          "opentelemetry-exporter-otlp-proto-common==1.25.0",
+          "opentelemetry-exporter-otlp-proto-grpc==1.25.0",
+          "opentelemetry-instrumentation==0.46b0",
+          "opentelemetry-instrumentation-asgi==0.46b0",
+          "opentelemetry-instrumentation-fastapi==0.46b0",
+          "opentelemetry-instrumentation-langchain==0.24.0",
+          "opentelemetry-instrumentation-openai==0.24.0",
+          "opentelemetry-proto==1.25.0",
+          "opentelemetry-sdk==1.25.0",
+          "opentelemetry-semantic-conventions==0.46b0",
+          "opentelemetry-semantic-conventions-ai==0.3.3",
+          "opentelemetry-util-http==0.46b0",
+          "orjson==3.10.12",
+          "overrides==7.7.0",
+          "packaging==24.2",
+          "pandas==2.2.3",
+          "parso==0.8.4",
+          "pexpect==4.9.0",
+          "pickleshare==0.7.5",
+          "pillow==11.0.0",
+          "pip==24.2",
+          "platformdirs==4.3.6",
+          "posthog==3.7.4",
+          "prompt-toolkit==3.0.48",
+          "propcache==0.2.1",
+          "proto-plus==1.25.0",
+          "protobuf==4.25.5",
+          "psutil==5.9.0",
+          "ptyprocess==0.7.0",
+          "pure-eval==0.2.3",
+          "pyopenssl==24.2.1",
+          "py-cpuinfo==9.0.0",
+          "pyasn1==0.6.1",
+          "pyasn1-modules==0.4.1",
+          "pycparser==2.22",
+          "pydantic==2.10.3",
+          "pydantic-core==2.27.1",
+          "pydantic-settings==2.7.0",
+          "pygments==2.18.0",
+          "pyparsing==3.2.0",
+          "pypdf==4.3.1",
+          "pypdf2==3.0.1",
+          "pyproject-hooks==1.2.0",
+          "python-dateutil==2.9.0.post0",
+          "python-dotenv==1.0.1",
+          "pytz==2024.2",
+          "pyzmq==25.1.2",
+          "ragaai-catalyst==2.0.7.1",
+          "referencing==0.35.1",
+          "regex==2024.11.6",
+          "requests==2.32.3",
+          "requests-oauthlib==2.0.0",
+          "requests-toolbelt==1.0.0",
+          "rich==13.9.4",
+          "rpds-py==0.22.3",
+          "rsa==4.9",
+          "setuptools==75.1.0",
+          "shellingham==1.5.4",
+          "six==1.17.0",
+          "sniffio==1.3.1",
+          "soupsieve==2.6",
+          "stack-data==0.6.3",
+          "starlette==0.41.3",
+          "striprtf==0.0.26",
+          "sympy==1.13.3",
+          "tenacity==8.3.0",
+          "textblob==0.18.0.post0",
+          "tiktoken==0.8.0",
+          "tokenizers==0.20.3",
+          "tomli==2.2.1",
+          "tornado==6.4.2",
+          "tqdm==4.67.1",
+          "traitlets==5.14.3",
+          "typer==0.15.1",
+          "typing-extensions==4.12.2",
+          "typing-inspect==0.9.0",
+          "tzdata==2024.2",
+          "uritemplate==4.1.1",
+          "urllib3==2.2.3",
+          "uvicorn==0.34.0",
+          "uvloop==0.21.0",
+          "watchfiles==1.0.3",
+          "wcwidth==0.2.13",
+          "websocket-client==1.8.0",
+          "websockets==14.1",
+          "wheel==0.44.0",
+          "wrapt==1.17.0",
+          "yarl==1.18.3",
+          "zipp==3.21.0",
+          "autocommand==2.2.2",
+          "backports.tarfile==1.2.0",
+          "inflect==7.3.1",
+          "jaraco.collections==5.1.0",
+          "jaraco.context==5.3.0",
+          "jaraco.functools==4.0.1",
+          "jaraco.text==3.12.1",
+          "more-itertools==10.3.0",
+          "typeguard==4.3.0"
+        ],
+        "env_path": "/Users/siddharthakosti/anaconda3/envs/agentic_tracing",
+        "command_to_run": "python /Users/siddharthakosti/anaconda3/envs/agentic_tracing/lib/python3.10/site-packages/ipykernel_launcher.py"
+      },
+      "source_code": "Path to the source code .zip file in format hashid.zip"
+    },
+    "resources": {
+      "cpu": {
+        "info": {
+          "name": "arm",
+          "cores": 10,
+          "threads": 10
+        },
+        "interval": "5s",
+        "values": [
+          29.0
+        ]
+      },
+      "memory": {
+        "info": {
+          "total": 16.0,
+          "free": 2.7064971923828125
+        },
+        "interval": "5s",
+        "values": [
+          83.1
+        ]
+      },
+      "disk": {
+        "info": {
+          "total": 926.3517189025879,
+          "free": 48.570152282714844
+        },
+        "interval": "5s",
+        "read": [
+          15727298.008789062
+        ],
+        "write": [
+          12049462.9296875
+        ]
+      },
+      "network": {
+        "info": {
+          "upload_speed": 6582.2763671875,
+          "download_speed": 7706.388671875
+        },
+        "interval": "5s",
+        "uploads": [
+          6582.2763671875
+        ],
+        "downloads": [
+          7706.388671875
+        ]
+      }
+    }
+  },
+  "data": [
+    {
+      "start_time": "2024-12-17T17:54:25.323156",
+      "end_time": "2024-12-17T17:55:15.713108",
+      "spans": [
+        {
+          "id": 1,
+          "hash_id": "ca52f46977f0e7ec570b12b4989a8525",
+          "source_hash_id": null,
+          "type": "agent",
+          "name": "itinerary_agent",
+          "start_time": "2024-12-17T17:55:11.300691",
+          "end_time": "2024-12-17T17:55:11.300725",
+          "error": null,
+          "parent_id": 0,
+          "info": {
+            "agent_type": "generic",
+            "version": "1.0.0",
+            "capabilities": [],
+            "memory_used": 0
+          },
+          "data": {
+            "input": {
+              "args": [],
+              "kwargs": {}
+            },
+            "output": "<__main__.ItineraryAgent object at 0x16b17bac0>",
+            "children": []
+          },
+          "network_calls": [],
+          "interactions": [
+            {
+              "id": "int_79807d2c-8175-41c8-835e-14de212b49a7",
+              "interaction_type": "input",
+              "timestamp": "2024-12-17T17:55:11.300691",
+              "content": {
+                "args": [],
+                "kwargs": {}
+              }
+            },
+            {
+              "id": "int_ca023904-45a4-4870-bd06-fa3bccd10dfd",
+              "interaction_type": "output",
+              "timestamp": "2024-12-17T17:55:11.300725",
+              "content": "<__main__.ItineraryAgent object at 0x16b17bac0>"
+            }
+          ],
+          "children": null
+        },
+        {
+          "id": 2,
+          "hash_id": "e50b7f834fa6e1450ada96aaad86452b",
+          "source_hash_id": null,
+          "type": "agent",
+          "name": "travel_agent",
+          "start_time": "2024-12-17T17:55:10.515716",
+          "end_time": "2024-12-17T17:55:15.712657",
+          "error": null,
+          "parent_id": 0,
+          "info": {
+            "agent_type": "generic",
+            "version": "1.0.0",
+            "capabilities": [],
+            "memory_used": 22298624
+          },
+          "data": {
+            "input": [
+              {
+                "role": "user",
+                "content": "\nExtract key travel preferences from the following user input:\n\"karela, 10 days, $100, nature\"\n\nPlease provide the extracted information in this format:\nDestination:\nActivities:\nBudget:\nDuration (in days):\n"
+              }
+            ],
+            "output": "Destination: Karela\nActivities: Nature, cultural experiences, relaxation\nBudget: $100\nDuration: 10 days\nItinerary: Explore natural beauty, day trips to nature reserves, wildlife sanctuary, waterfall, lake, countryside biking, farm visit, cooking class, spa relaxation\nFlight Price: Estimated $500-$1000 from Delhi to Karela\n\nOverall, a budget-friendly 10-day trip to Karela with a focus on nature, cultural experiences, and relaxation. Flight prices range from $500-$1000.",
+            "children": [
+              {
+                "id": 3,
+                "hash_id": "9dd958ce9ca484216761bed630c347fd",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2024-12-17T17:55:10.527268+05:30",
+                "end_time": "2024-12-17T17:55:11.193885+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "llm_type": "llm",
+                  "version": "1.0.0",
+                  "memory_used": 17154048,
+                  "cost": {
+                    "prompt_cost": 8e-05,
+                    "completion_cost": 4e-05,
+                    "total_cost": 0.00012
+                  },
+                  "tokens": {
+                    "prompt_tokens": 51,
+                    "completion_tokens": 21,
+                    "total_tokens": 72
+                  }
+                },
+                "data": {
+                  "input": [
+                    {
+                      "role": "user",
+                      "content": "\nExtract key travel preferences from the following user input:\n\"karela, 10 days, $100, nature\"\n\nPlease provide the extracted information in this format:\nDestination:\nActivities:\nBudget:\nDuration (in days):\n"
+                    }
+                  ],
+                  "output": "Destination: Karela\nActivities: Nature\nBudget: $100\nDuration (in days): 10",
+                  "memory_used": 17154048
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.022947,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "29c4274a-3eef-4a37-891f-640840bcb8fb",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "int_b05d2138-9690-4410-b770-0caf63457231",
+                    "interaction_type": "input",
+                    "content": [
+                      {
+                        "role": "user",
+                        "content": "\nExtract key travel preferences from the following user input:\n\"karela, 10 days, $100, nature\"\n\nPlease provide the extracted information in this format:\nDestination:\nActivities:\nBudget:\nDuration (in days):\n"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "int_62b1ee11-b2e7-4d3b-b473-f740d8b7bbd3",
+                    "interaction_type": "output",
+                    "content": "Destination: Karela\nActivities: Nature\nBudget: $100\nDuration (in days): 10"
+                  }
+                ]
+              },
+              {
+                "id": 4,
+                "hash_id": "fb6af6b927590e38e2cf07fb82b5cb4e",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "weather_tool",
+                "start_time": "2024-12-17T17:55:11.196481+05:30",
+                "end_time": "2024-12-17T17:55:11.295969+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 786432
+                },
+                "data": {
+                  "input": {
+                    "args": [
+                      "Karela"
+                    ],
+                    "kwargs": {}
+                  },
+                  "output": "Weather data not available.",
+                  "memory_used": 786432
+                },
+                "network_calls": [
+                  {
+                    "url": "http://api.openweathermap.org/data/2.5/weather",
+                    "method": "get",
+                    "status_code": 401,
+                    "response_time": 0.098882,
+                    "bytes_sent": 121,
+                    "bytes_received": 459,
+                    "protocol": "http",
+                    "connection_id": "20d43727-6377-40c1-96e0-8e8e61e693f4",
+                    "parent_id": null,
+                    "request": {
+                      "headers": {
+                        "User-Agent": "python-requests/2.32.3",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept": "*/*",
+                        "Connection": "keep-alive"
+                      },
+                      "body": null
+                    },
+                    "response": {
+                      "headers": {
+                        "Server": "openresty",
+                        "Date": "Tue, 17 Dec 2024 12:25:11 GMT",
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Content-Length": "108",
+                        "Connection": "keep-alive",
+                        "X-Cache-Key": "/data/2.5/weather?q=karela&units=metric",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST"
+                      },
+                      "body": "{\"cod\":401, \"message\": \"Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.\"}"
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "int_32fc41c6-0e25-476b-ae2c-7b3faec1b9b2",
+                    "interaction_type": "input",
+                    "content": {
+                      "args": [
+                        "Karela"
+                      ],
+                      "kwargs": {}
+                    }
+                  },
+                  {
+                    "id": "int_5d72ed62-7dc8-4c1f-bbb5-4875c431d85e",
+                    "interaction_type": "output",
+                    "content": "Weather data not available."
+                  }
+                ]
+              },
+              {
+                "id": 5,
+                "hash_id": "9a5d14a2ecdfba36c6af3b2857927ac8",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "flight_price_estimator_tool",
+                "start_time": "2024-12-17T17:55:11.298202+05:30",
+                "end_time": "2024-12-17T17:55:11.298261+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 0
+                },
+                "data": {
+                  "input": {
+                    "args": [
+                      "delhi",
+                      "Karela"
+                    ],
+                    "kwargs": {}
+                  },
+                  "output": "Estimated price from delhi to Karela: $500-$1000",
+                  "memory_used": 0
+                },
+                "network_calls": [],
+                "interactions": [
+                  {
+                    "id": "int_82b51a3b-6d3a-432e-a89a-6b9ed60c556d",
+                    "interaction_type": "input",
+                    "content": {
+                      "args": [
+                        "delhi",
+                        "Karela"
+                      ],
+                      "kwargs": {}
+                    }
+                  },
+                  {
+                    "id": "int_06805eda-43ab-467c-90a6-7efb5d82acfe",
+                    "interaction_type": "output",
+                    "content": "Estimated price from delhi to Karela: $500-$1000"
+                  }
+                ]
+              },
+              {
+                "id": 6,
+                "hash_id": "9a39e6f530bcd5d062d90bedb97290ce",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2024-12-17T17:55:11.312592+05:30",
+                "end_time": "2024-12-17T17:55:13.706439+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "llm_type": "llm",
+                  "version": "1.0.0",
+                  "memory_used": 0,
+                  "cost": {
+                    "prompt_cost": 9e-05,
+                    "completion_cost": 0.00049,
+                    "total_cost": 0.00059
+                  },
+                  "tokens": {
+                    "prompt_tokens": 61,
+                    "completion_tokens": 247,
+                    "total_tokens": 308
+                  }
+                },
+                "data": {
+                  "input": [
+                    {
+                      "role": "user",
+                      "content": "\nYou are a travel expert named Itinerary Agent.\nBased on the following user preferences, create a 10-day travel itinerary.\n\nUser Preferences:\nDestination: Karela\nActivities: Nature\nBudget: $100\nDuration (in days): 10\n\nItinerary:\n"
+                    }
+                  ],
+                  "output": "Day 1-3: \n- Arrival in Karela\n- Check into a budget-friendly guesthouse or hostel\n- Explore the natural beauty of Karela by visiting the local parks, hiking trails, and botanical gardens\n- Enjoy a picnic in one of the scenic spots\n- Try out local cuisine at affordable eateries\n\nDay 4-6:\n- Take a day trip to a nearby nature reserve or wildlife sanctuary\n- Participate in guided nature walks or birdwatching activities\n- Visit a nearby waterfall or lake for a refreshing swim\n- Enjoy a sunset boat ride on a local river\n\nDay 7-9:\n- Explore the countryside by renting a bike or joining a cycling tour\n- Visit a local farm to learn about sustainable agriculture practices\n- Take a cooking class to learn how to prepare traditional Karelan dishes\n- Relax at a local spa for a rejuvenating massage\n\nDay 10:\n- Departure from Karela\n- Souvenir shopping at local markets\n- Final meal at a budget-friendly restaurant before heading to the airport\n\nOverall, this itinerary offers a mix of nature-based activities, cultural experiences, and relaxation, all within the budget of $100 for 10 days in Karela.",
+                  "memory_used": 0
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.006839,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "51ac101f-4715-40cd-86dc-7d52b16a71b6",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "int_4b5daa16-d0a8-4fe7-8251-c953e2018b0c",
+                    "interaction_type": "input",
+                    "content": [
+                      {
+                        "role": "user",
+                        "content": "\nYou are a travel expert named Itinerary Agent.\nBased on the following user preferences, create a 10-day travel itinerary.\n\nUser Preferences:\nDestination: Karela\nActivities: Nature\nBudget: $100\nDuration (in days): 10\n\nItinerary:\n"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "int_1f8d7ecc-99ef-45d9-a5b8-b576a49f8c1d",
+                    "interaction_type": "output",
+                    "content": "Day 1-3: \n- Arrival in Karela\n- Check into a budget-friendly guesthouse or hostel\n- Explore the natural beauty of Karela by visiting the local parks, hiking trails, and botanical gardens\n- Enjoy a picnic in one of the scenic spots\n- Try out local cuisine at affordable eateries\n\nDay 4-6:\n- Take a day trip to a nearby nature reserve or wildlife sanctuary\n- Participate in guided nature walks or birdwatching activities\n- Visit a nearby waterfall or lake for a refreshing swim\n- Enjoy a sunset boat ride on a local river\n\nDay 7-9:\n- Explore the countryside by renting a bike or joining a cycling tour\n- Visit a local farm to learn about sustainable agriculture practices\n- Take a cooking class to learn how to prepare traditional Karelan dishes\n- Relax at a local spa for a rejuvenating massage\n\nDay 10:\n- Departure from Karela\n- Souvenir shopping at local markets\n- Final meal at a budget-friendly restaurant before heading to the airport\n\nOverall, this itinerary offers a mix of nature-based activities, cultural experiences, and relaxation, all within the budget of $100 for 10 days in Karela."
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "hash_id": "d25bbfc02f2b82cd1aa3390b3c8d44bd",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "currency_converter_tool",
+                "start_time": "2024-12-17T17:55:13.708742+05:30",
+                "end_time": "2024-12-17T17:55:14.314292+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 0
+                },
+                "data": {
+                  "input": {
+                    "args": [
+                      100.0,
+                      "USD",
+                      "INR"
+                    ],
+                    "kwargs": {}
+                  },
+                  "output": "None",
+                  "memory_used": 0
+                },
+                "network_calls": [
+                  {
+                    "url": "https://v6.exchangerate-api.com/v6/None/pair/USD/INR",
+                    "method": "get",
+                    "status_code": 403,
+                    "response_time": 0.605006,
+                    "bytes_sent": 121,
+                    "bytes_received": 581,
+                    "protocol": "https",
+                    "connection_id": "2325d06e-2d41-40a2-ba40-4331ef25c04e",
+                    "parent_id": null,
+                    "request": {
+                      "headers": {
+                        "User-Agent": "python-requests/2.32.3",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept": "*/*",
+                        "Connection": "keep-alive"
+                      },
+                      "body": null
+                    },
+                    "response": {
+                      "headers": {
+                        "Date": "Tue, 17 Dec 2024 12:25:14 GMT",
+                        "Content-Type": "application/json",
+                        "Content-Length": "148",
+                        "Connection": "keep-alive",
+                        "access-control-allow-headers": "*",
+                        "access-control-allow-origin": "*",
+                        "Content-Encoding": "gzip",
+                        "cf-cache-status": "DYNAMIC",
+                        "vary": "accept-encoding",
+                        "Server": "cloudflare",
+                        "CF-RAY": "8f36e504ec9fc1c9-BLR",
+                        "alt-svc": "h3=\":443\"; ma=86400"
+                      },
+                      "body": "{\"result\":\"error\",\"documentation\":\"https://www.exchangerate-api.com/docs\",\"terms-of-use\":\"https://www.exchangerate-api.com/terms\",\"error-type\":\"inactive-account\",\"extra-info\":\"Please contact support.\"}"
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "int_851deef9-59c6-438d-8714-c0b112e3f97b",
+                    "interaction_type": "input",
+                    "content": {
+                      "args": [
+                        100.0,
+                        "USD",
+                        "INR"
+                      ],
+                      "kwargs": {}
+                    }
+                  },
+                  {
+                    "id": "int_ce144544-5c11-4db9-a33b-5673397368a0",
+                    "interaction_type": "output",
+                    "content": "None"
+                  }
+                ]
+              },
+              {
+                "id": 8,
+                "hash_id": "7570c8fa61c0daf697d5d5feb30dd7ab",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2024-12-17T17:55:14.323537+05:30",
+                "end_time": "2024-12-17T17:55:15.712521+05:30",
+                "error": null,
+                "parent_id": 2,
+                "info": {
+                  "llm_type": "llm",
+                  "version": "1.0.0",
+                  "memory_used": 114688,
+                  "cost": {
+                    "prompt_cost": 0.00047,
+                    "completion_cost": 0.00021,
+                    "total_cost": 0.00068
+                  },
+                  "tokens": {
+                    "prompt_tokens": 314,
+                    "completion_tokens": 106,
+                    "total_tokens": 420
+                  }
+                },
+                "data": {
+                  "input": [
+                    {
+                      "role": "user",
+                      "content": "\nSummarize the following travel plan:\n\nDestination: Karela\nActivities: Nature\nBudget: $100\nDuration: 10 days\nItinerary: Day 1-3: \n- Arrival in Karela\n- Check into a budget-friendly guesthouse or hostel\n- Explore the natural beauty of Karela by visiting the local parks, hiking trails, and botanical gardens\n- Enjoy a picnic in one of the scenic spots\n- Try out local cuisine at affordable eateries\n\nDay 4-6:\n- Take a day trip to a nearby nature reserve or wildlife sanctuary\n- Participate in guided nature walks or birdwatching activities\n- Visit a nearby waterfall or lake for a refreshing swim\n- Enjoy a sunset boat ride on a local river\n\nDay 7-9:\n- Explore the countryside by renting a bike or joining a cycling tour\n- Visit a local farm to learn about sustainable agriculture practices\n- Take a cooking class to learn how to prepare traditional Karelan dishes\n- Relax at a local spa for a rejuvenating massage\n\nDay 10:\n- Departure from Karela\n- Souvenir shopping at local markets\n- Final meal at a budget-friendly restaurant before heading to the airport\n\nOverall, this itinerary offers a mix of nature-based activities, cultural experiences, and relaxation, all within the budget of $100 for 10 days in Karela.\nWeather: Weather data not available.\nFlight Price: Estimated price from delhi to Karela: $500-$1000\n\nTravel Summary:\n"
+                    }
+                  ],
+                  "output": "Destination: Karela\nActivities: Nature, cultural experiences, relaxation\nBudget: $100\nDuration: 10 days\nItinerary: Explore natural beauty, day trips to nature reserves, wildlife sanctuary, waterfall, lake, countryside biking, farm visit, cooking class, spa relaxation\nFlight Price: Estimated $500-$1000 from Delhi to Karela\n\nOverall, a budget-friendly 10-day trip to Karela with a focus on nature, cultural experiences, and relaxation. Flight prices range from $500-$1000.",
+                  "memory_used": 114688
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.007532,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "dab2fda3-00b8-42cc-825b-60f4089200b4",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "int_5cbbf191-2aaa-40d0-9580-019fdd7e7385",
+                    "interaction_type": "input",
+                    "content": [
+                      {
+                        "role": "user",
+                        "content": "\nSummarize the following travel plan:\n\nDestination: Karela\nActivities: Nature\nBudget: $100\nDuration: 10 days\nItinerary: Day 1-3: \n- Arrival in Karela\n- Check into a budget-friendly guesthouse or hostel\n- Explore the natural beauty of Karela by visiting the local parks, hiking trails, and botanical gardens\n- Enjoy a picnic in one of the scenic spots\n- Try out local cuisine at affordable eateries\n\nDay 4-6:\n- Take a day trip to a nearby nature reserve or wildlife sanctuary\n- Participate in guided nature walks or birdwatching activities\n- Visit a nearby waterfall or lake for a refreshing swim\n- Enjoy a sunset boat ride on a local river\n\nDay 7-9:\n- Explore the countryside by renting a bike or joining a cycling tour\n- Visit a local farm to learn about sustainable agriculture practices\n- Take a cooking class to learn how to prepare traditional Karelan dishes\n- Relax at a local spa for a rejuvenating massage\n\nDay 10:\n- Departure from Karela\n- Souvenir shopping at local markets\n- Final meal at a budget-friendly restaurant before heading to the airport\n\nOverall, this itinerary offers a mix of nature-based activities, cultural experiences, and relaxation, all within the budget of $100 for 10 days in Karela.\nWeather: Weather data not available.\nFlight Price: Estimated price from delhi to Karela: $500-$1000\n\nTravel Summary:\n"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "int_7d59e9e0-881e-4091-95c9-b682aadee50b",
+                    "interaction_type": "output",
+                    "content": "Destination: Karela\nActivities: Nature, cultural experiences, relaxation\nBudget: $100\nDuration: 10 days\nItinerary: Explore natural beauty, day trips to nature reserves, wildlife sanctuary, waterfall, lake, countryside biking, farm visit, cooking class, spa relaxation\nFlight Price: Estimated $500-$1000 from Delhi to Karela\n\nOverall, a budget-friendly 10-day trip to Karela with a focus on nature, cultural experiences, and relaxation. Flight prices range from $500-$1000."
+                  }
+                ]
+              }
+            ]
+          },
+          "network_calls": [],
+          "interactions": [
+            {
+              "id": "int_150867d3-b1b1-4580-90d0-0dabbaf8030c",
+              "interaction_type": "input",
+              "timestamp": "2024-12-17T17:55:10.515716",
+              "content": {
+                "args": [],
+                "kwargs": {}
+              }
+            },
+            {
+              "id": "int_7241321a-0977-45f0-bc9c-b14b0509f79b",
+              "interaction_type": "output",
+              "timestamp": "2024-12-17T17:55:15.712657",
+              "content": "None"
+            }
+          ],
+          "children": null
+        }
+      ]
+    }
+  ],
+  "replays": {
+    "source": null
+  }
+}
