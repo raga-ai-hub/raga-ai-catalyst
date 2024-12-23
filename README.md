@@ -153,11 +153,11 @@ from ragaai_catalyst import Tracer
 # Start a trace recording
 tracer = Tracer(
     project_name="Test-RAG-App-1",
-    dataset_name="tracer_dataset_name"
+    dataset_name="tracer_dataset_name",
     metadata={"key1": "value1", "key2": "value2"},
     tracer_type="langchain",
     pipeline={
-        "llm_model": "gpt-3.5-turbo",
+        "llm_model": "gpt-4o-mini",
         "vector_store": "faiss",
         "embed_model": "text-embedding-ada-002",
     }
