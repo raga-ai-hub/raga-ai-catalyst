@@ -215,32 +215,24 @@ class LLMTracerMixin:
             
             @wrapt.decorator
             def wrapper(wrapped, instance, args, kwargs):
-                return self.trace_llm_call(wrapped, *args, **kwargs)
+                if asyncio.iscoroutinefunction(wrapped):
+                    return self.trace_llm_call(wrapped, *args, **kwargs)
+                return self.trace_llm_call_sync(wrapped, *args, **kwargs)
             
             # Wrap the class method
             wrapped_method = wrapper(original_method)
             setattr(obj, method_name, wrapped_method)
             self.patches.append((obj, method_name, original_method))
             
-            # Find and patch all existing instances
-           
-            # for instance in gc.get_objects():
-            #     if isinstance(instance, obj):
-            #         try:
-            #             instance_method = getattr(instance, method_name, None)
-            #             if instance_method and not isinstance(instance_method, wrapt.FunctionWrapper):
-            #                 wrapped_instance_method = wrapper(instance_method)
-            #                 setattr(instance, method_name, wrapped_instance_method)
-            #                 self.patches.append((instance, method_name, instance_method))
-            #         except (AttributeError, TypeError):
-            #             continue
         else:
             # For instance methods
             original_method = getattr(obj, method_name)
             
             @wrapt.decorator
             def wrapper(wrapped, instance, args, kwargs):
-                return self.trace_llm_call(wrapped, *args, **kwargs)
+                if asyncio.iscoroutinefunction(wrapped):
+                    return self.trace_llm_call(wrapped, *args, **kwargs)
+                return self.trace_llm_call_sync(wrapped, *args, **kwargs)
             
             wrapped_method = wrapper(original_method)
             setattr(obj, method_name, wrapped_method)
@@ -295,7 +287,7 @@ class LLMTracerMixin:
 
     def _extract_token_usage(self, result):
         """Extract token usage from result"""
-        # If result is a coroutine, await it first
+        # Handle coroutines
         if asyncio.iscoroutine(result):
             result = asyncio.run(result)
 
@@ -503,10 +495,15 @@ class LLMTracerMixin:
 
         try:
             # Execute the LLM call
+            result = None
             if asyncio.iscoroutinefunction(original_func):
                 result = await original_func(*args, **kwargs)
             else:
                 result = original_func(*args, **kwargs)
+
+            # If result is a coroutine, await it
+            if asyncio.iscoroutine(result):
+                result = await result
 
             # Calculate resource usage
             end_time = datetime.now().astimezone()
@@ -570,9 +567,141 @@ class LLMTracerMixin:
             self.add_component(llm_component)
             raise
 
+    def _extract_token_usage_sync(self, result):
+        """Sync version of extract token usage"""
+        # Handle coroutines
+        if asyncio.iscoroutine(result):
+            result = asyncio.run(result)
+
+        # Handle standard OpenAI/Anthropic format
+        if hasattr(result, "usage"):
+            usage = result.usage
+            return {
+                "prompt_tokens": getattr(usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(usage, "completion_tokens", 0),
+                "total_tokens": getattr(usage, "total_tokens", 0)
+            }
+        
+        # Handle Google GenerativeAI format with usage_metadata
+        if hasattr(result, "usage_metadata"):
+            metadata = result.usage_metadata
+            return {
+                "prompt_tokens": getattr(metadata, "prompt_token_count", 0),
+                "completion_tokens": getattr(metadata, "candidates_token_count", 0),
+                "total_tokens": getattr(metadata, "total_token_count", 0)
+            }
+        
+        # Handle Vertex AI format
+        if hasattr(result, "text"):
+            # For LangChain ChatVertexAI
+            total_tokens = getattr(result, "token_count", 0)
+            if not total_tokens and hasattr(result, "_raw_response"):
+                # Try to get from raw response
+                total_tokens = getattr(result._raw_response, "token_count", 0)
+            return {
+                "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
+                "completion_tokens": total_tokens,
+                "total_tokens": total_tokens
+            }
+        
+        return {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        }
+
+    def trace_llm_call_sync(self, original_func, *args, **kwargs):
+        """Sync version of trace_llm_call"""
+        if not self.is_active:
+            if asyncio.iscoroutinefunction(original_func):
+                return asyncio.run(original_func(*args, **kwargs))
+            return original_func(*args, **kwargs)
+
+        start_time = datetime.now().astimezone()
+        start_memory = psutil.Process().memory_info().rss
+        component_id = str(uuid.uuid4())
+        hash_id = self.trace_llm_call.hash_id
+
+        # Start tracking network calls for this component
+        self.start_component(component_id)
+
+        try:
+            # Execute the LLM call
+            result = None
+            if asyncio.iscoroutinefunction(original_func):
+                result = asyncio.run(original_func(*args, **kwargs))
+            else:
+                result = original_func(*args, **kwargs)
+
+            # If result is a coroutine, run it
+            if asyncio.iscoroutine(result):
+                result = asyncio.run(result)
+
+            # Calculate resource usage
+            end_time = datetime.now().astimezone()
+            end_memory = psutil.Process().memory_info().rss
+            memory_used = max(0, end_memory - start_memory)
+
+            # Extract token usage and calculate cost
+            token_usage = self._extract_token_usage_sync(result)
+            model_name = self._extract_model_name(kwargs)
+            cost = self._calculate_cost(token_usage, model_name)
+
+            # End tracking network calls for this component
+            self.end_component(component_id)
+
+            # Create LLM component
+            llm_component = self.create_llm_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=self.current_llm_call_name.get(),
+                llm_type=model_name,
+                version="1.0.0",
+                memory_used=memory_used,
+                start_time=start_time,
+                end_time=end_time,
+                input_data=self._extract_input_data(kwargs, result),
+                output_data=extract_llm_output(result),
+                cost=cost,
+                usage=token_usage
+            )
+
+            self.add_component(llm_component)
+            return result
+
+        except Exception as e:
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            # End tracking network calls for this component
+            self.end_component(component_id)
+            
+            end_time = datetime.now().astimezone()
+            
+            llm_component = self.create_llm_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=self.current_llm_call_name.get(),
+                llm_type="unknown",
+                version="1.0.0",
+                memory_used=0,
+                start_time=start_time,
+                end_time=end_time,
+                input_data=self._extract_input_data(kwargs, None),
+                output_data=None,
+                error=error_component
+            )
+
+            self.add_component(llm_component)
+            raise
+
     async def _extract_token_usage(self, result):
         """Extract token usage from result"""
-        # If result is a coroutine, await it first
+        # Handle coroutines
         if asyncio.iscoroutine(result):
             result = await result
 
@@ -613,93 +742,6 @@ class LLMTracerMixin:
             "total_tokens": 0
         }
 
-    def _extract_input_data(self, kwargs, result):
-        """Extract input data from kwargs and result"""
-    
-        # For Vertex AI GenerationResponse
-        if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
-            # Extract generation config
-            generation_config = kwargs.get('generation_config', {})
-            config_dict = {}
-            if hasattr(generation_config, 'temperature'):
-                config_dict['temperature'] = generation_config.temperature
-            if hasattr(generation_config, 'top_p'):
-                config_dict['top_p'] = generation_config.top_p
-            if hasattr(generation_config, 'max_output_tokens'):
-                config_dict['max_tokens'] = generation_config.max_output_tokens
-            if hasattr(generation_config, 'candidate_count'):
-                config_dict['n'] = generation_config.candidate_count
-
-            return {
-                "prompt": kwargs.get('contents', ''),
-                "model": "gemini-1.5-flash-002",  
-                **config_dict
-            }
-
-        # For standard OpenAI format
-        messages = kwargs.get("messages", [])
-        if messages:
-            return {
-                "messages": messages,
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
-            }
-
-        # For text completion format
-        if "prompt" in kwargs:
-            return {
-                "prompt": kwargs["prompt"],
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
-            }
-
-        # For any other case, try to extract from kwargs
-        if "contents" in kwargs:
-            return {
-                "prompt": kwargs["contents"],
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None)
-            }
-
-        print("No input data found")
-        return {}
-
-    def _calculate_cost(self, token_usage, model_name):
-        """Calculate cost based on token usage and model"""
-        if not isinstance(token_usage, dict):
-            token_usage = {
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": token_usage if isinstance(token_usage, (int, float)) else 0
-            }
-
-        # Get model costs, defaulting to Vertex AI PaLM2 costs if unknown
-        model_cost = self.model_costs.get(model_name, {
-            "input_cost_per_token": 0.0005,  # $0.0005 per 1K input tokens
-            "output_cost_per_token": 0.0005  # $0.0005 per 1K output tokens
-        })
-
-        # Calculate costs per 1K tokens
-        input_cost = (token_usage.get("prompt_tokens", 0) / 1000.0) * model_cost.get("input_cost_per_token", 0.0005)
-        output_cost = (token_usage.get("completion_tokens", 0) / 1000.0) * model_cost.get("output_cost_per_token", 0.0005)
-        total_cost = input_cost + output_cost
-
-        return {
-            "input_cost": round(input_cost, 6),
-            "output_cost": round(output_cost, 6),
-            "total_cost": round(total_cost, 6)
-        }
-
     def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
         def decorator(func_or_class):
             if isinstance(func_or_class, type):
@@ -729,6 +771,8 @@ class LLMTracerMixin:
                         self.current_llm_call_name.reset(token)
 
                 return async_wrapper if asyncio.iscoroutinefunction(func_or_class) else sync_wrapper
+
+        return decorator
 
     def unpatch_llm_calls(self):
         """Remove all patches"""
@@ -810,6 +854,16 @@ def extract_llm_output(result):
     class OutputResponse:
         def __init__(self, output_response):
             self.output_response = output_response
+
+    # Handle coroutines
+    if asyncio.iscoroutine(result):
+        # For sync context, run the coroutine
+        if not asyncio.get_event_loop().is_running():
+            result = asyncio.run(result)
+        else:
+            # We're in an async context, but this function is called synchronously
+            # Return a placeholder and let the caller handle the coroutine
+            return OutputResponse("Coroutine result pending")
 
     # Handle Google GenerativeAI format
     if hasattr(result, "result"):
