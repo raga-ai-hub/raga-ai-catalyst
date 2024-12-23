@@ -42,7 +42,6 @@ class LLMTracerMixin:
         # Handle modules that are already imported
         import sys
         
-        # Patch vertexai first since it's commonly imported early
         if "vertexai" in sys.modules:
             self.patch_vertex_ai_methods(sys.modules["vertexai"])
         if "vertexai.generative_models" in sys.modules:
@@ -68,8 +67,6 @@ class LLMTracerMixin:
         wrapt.register_post_import_hook(self.patch_litellm_methods, "litellm")
         wrapt.register_post_import_hook(self.patch_anthropic_methods, "anthropic")
         wrapt.register_post_import_hook(self.patch_google_genai_methods, "google.generativeai")
-        wrapt.register_post_import_hook(self.patch_langchain_google_methods, "langchain_google_vertexai")
-        wrapt.register_post_import_hook(self.patch_langchain_google_methods, "langchain_google_genai")
         
         # Add hooks for LangChain integrations
         wrapt.register_post_import_hook(self.patch_langchain_google_methods, "langchain_google_vertexai")
@@ -341,11 +338,6 @@ class LLMTracerMixin:
 
     def _extract_input_data(self, kwargs, result):
         """Extract input data from kwargs and result"""
-        # Debug logging
-        print("\n=== Debug Info ===")
-        print("kwargs:", kwargs)
-        print("result type:", type(result))
-        print("result attrs:", dir(result))
 
         # For Vertex AI GenerationResponse
         if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
@@ -363,14 +355,13 @@ class LLMTracerMixin:
 
             return {
                 "prompt": kwargs.get('contents', ''),
-                "model": "gemini-1.5-flash-002",  # This is set in your trace_simple_agent.py
+                "model": "gemini-1.5-flash-002",  
                 **config_dict
             }
 
         # For standard OpenAI format
         messages = kwargs.get("messages", [])
         if messages:
-            print("OpenAI messages:", messages)
             return {
                 "messages": messages,
                 "model": kwargs.get("model", "unknown"),
@@ -383,7 +374,6 @@ class LLMTracerMixin:
 
         # For text completion format
         if "prompt" in kwargs:
-            print("Text completion prompt:", kwargs["prompt"])
             return {
                 "prompt": kwargs["prompt"],
                 "model": kwargs.get("model", "unknown"),
@@ -495,47 +485,6 @@ class LLMTracerMixin:
         """Stop tracking network calls for a component"""
         self.current_component_id = None
 
-    # def track_network_call(self, request, response, error=None):
-    #     """Track a network call for the current component"""
-    #     if self.current_component_id is None:
-    #         return
-
-    #     start_time = getattr(request, '_start_time', datetime.now())
-    #     end_time = datetime.now()
-    #     response_time = (end_time - start_time).total_seconds()
-
-    #     # Calculate bytes sent/received
-    #     request_body = getattr(request, 'body', None)
-    #     bytes_sent = len(str(request_body).encode('utf-8')) if request_body else 0
-    #     response_body = getattr(response, 'text', None)
-    #     bytes_received = len(str(response_body).encode('utf-8')) if response_body else 0
-
-    #     # Extract URL components
-    #     url = str(request.url) if hasattr(request, 'url') else None
-    #     protocol = url.split('://')[0] if url else None
-
-    #     network_call = {
-    #         "url": url,
-    #         "method": request.method.lower() if hasattr(request, 'method') else None,
-    #         "status_code": response.status_code if hasattr(response, 'status_code') else None,
-    #         "response_time": response_time,
-    #         "bytes_sent": bytes_sent,
-    #         "bytes_received": bytes_received,
-    #         "protocol": protocol,
-    #         "connection_id": str(uuid.uuid4()),
-    #         "parent_id": None,
-    #         "request": {
-    #             "headers": dict(request.headers) if hasattr(request, 'headers') else {},
-    #             "body": request_body
-    #         },
-    #         "response": {
-    #             "headers": dict(response.headers) if hasattr(response, 'headers') else {},
-    #             "body": response_body
-    #         } if response else None,
-    #         "error": str(error) if error else None
-    #     }
-
-    #     self.component_network_calls[self.current_component_id].append(network_call)
 
     async def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
@@ -666,12 +615,7 @@ class LLMTracerMixin:
 
     def _extract_input_data(self, kwargs, result):
         """Extract input data from kwargs and result"""
-        # Debug logging
-        print("\n=== Debug Info ===")
-        print("kwargs:", kwargs)
-        print("result type:", type(result))
-        print("result attrs:", dir(result))
-
+    
         # For Vertex AI GenerationResponse
         if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
             # Extract generation config
@@ -688,14 +632,13 @@ class LLMTracerMixin:
 
             return {
                 "prompt": kwargs.get('contents', ''),
-                "model": "gemini-1.5-flash-002",  # This is set in your trace_simple_agent.py
+                "model": "gemini-1.5-flash-002",  
                 **config_dict
             }
 
         # For standard OpenAI format
         messages = kwargs.get("messages", [])
         if messages:
-            print("OpenAI messages:", messages)
             return {
                 "messages": messages,
                 "model": kwargs.get("model", "unknown"),
@@ -708,7 +651,6 @@ class LLMTracerMixin:
 
         # For text completion format
         if "prompt" in kwargs:
-            print("Text completion prompt:", kwargs["prompt"])
             return {
                 "prompt": kwargs["prompt"],
                 "model": kwargs.get("model", "unknown"),
