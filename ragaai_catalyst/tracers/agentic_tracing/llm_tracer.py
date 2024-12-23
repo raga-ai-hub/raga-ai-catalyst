@@ -346,19 +346,25 @@ class LLMTracerMixin:
         print("kwargs:", kwargs)
         print("result type:", type(result))
         print("result attrs:", dir(result))
-        
-        # For Vertex AI
-        if hasattr(result, "candidates") and hasattr(result, "prompt"):
-            prompt_text = result.prompt.text if hasattr(result.prompt, "text") else str(result.prompt)
-            print("Vertex AI prompt:", prompt_text)
+
+        # For Vertex AI GenerationResponse
+        if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
+            # Extract generation config
+            generation_config = kwargs.get('generation_config', {})
+            config_dict = {}
+            if hasattr(generation_config, 'temperature'):
+                config_dict['temperature'] = generation_config.temperature
+            if hasattr(generation_config, 'top_p'):
+                config_dict['top_p'] = generation_config.top_p
+            if hasattr(generation_config, 'max_output_tokens'):
+                config_dict['max_tokens'] = generation_config.max_output_tokens
+            if hasattr(generation_config, 'candidate_count'):
+                config_dict['n'] = generation_config.candidate_count
+
             return {
-                "prompt": prompt_text,
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
+                "prompt": kwargs.get('contents', ''),
+                "model": "gemini-1.5-flash-002",  # This is set in your trace_simple_agent.py
+                **config_dict
             }
 
         # For standard OpenAI format
@@ -386,6 +392,16 @@ class LLMTracerMixin:
                 "top_p": kwargs.get("top_p", None),
                 "frequency_penalty": kwargs.get("frequency_penalty", None),
                 "presence_penalty": kwargs.get("presence_penalty", None)
+            }
+
+        # For any other case, try to extract from kwargs
+        if "contents" in kwargs:
+            return {
+                "prompt": kwargs["contents"],
+                "model": kwargs.get("model", "unknown"),
+                "temperature": kwargs.get("temperature", 0.7),
+                "max_tokens": kwargs.get("max_tokens", None),
+                "top_p": kwargs.get("top_p", None)
             }
 
         print("No input data found")
@@ -655,19 +671,25 @@ class LLMTracerMixin:
         print("kwargs:", kwargs)
         print("result type:", type(result))
         print("result attrs:", dir(result))
-        
-        # For Vertex AI
-        if hasattr(result, "candidates") and hasattr(result, "prompt"):
-            prompt_text = result.prompt.text if hasattr(result.prompt, "text") else str(result.prompt)
-            print("Vertex AI prompt:", prompt_text)
+
+        # For Vertex AI GenerationResponse
+        if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
+            # Extract generation config
+            generation_config = kwargs.get('generation_config', {})
+            config_dict = {}
+            if hasattr(generation_config, 'temperature'):
+                config_dict['temperature'] = generation_config.temperature
+            if hasattr(generation_config, 'top_p'):
+                config_dict['top_p'] = generation_config.top_p
+            if hasattr(generation_config, 'max_output_tokens'):
+                config_dict['max_tokens'] = generation_config.max_output_tokens
+            if hasattr(generation_config, 'candidate_count'):
+                config_dict['n'] = generation_config.candidate_count
+
             return {
-                "prompt": prompt_text,
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
+                "prompt": kwargs.get('contents', ''),
+                "model": "gemini-1.5-flash-002",  # This is set in your trace_simple_agent.py
+                **config_dict
             }
 
         # For standard OpenAI format
@@ -695,6 +717,16 @@ class LLMTracerMixin:
                 "top_p": kwargs.get("top_p", None),
                 "frequency_penalty": kwargs.get("frequency_penalty", None),
                 "presence_penalty": kwargs.get("presence_penalty", None)
+            }
+
+        # For any other case, try to extract from kwargs
+        if "contents" in kwargs:
+            return {
+                "prompt": kwargs["contents"],
+                "model": kwargs.get("model", "unknown"),
+                "temperature": kwargs.get("temperature", 0.7),
+                "max_tokens": kwargs.get("max_tokens", None),
+                "top_p": kwargs.get("top_p", None)
             }
 
         print("No input data found")
