@@ -98,7 +98,7 @@ class Tracer(AgenticTracing):
                 project["id"] for project in response.json()["data"]["content"] if project["name"] == project_name
             ][0]
             # super().__init__(user_detail=self._pass_user_data())
-            self.file_tracker = TrackName()
+            # self.file_tracker = TrackName()
             self._pass_user_data()
 
         except requests.exceptions.RequestException as e:
@@ -119,9 +119,7 @@ class Tracer(AgenticTracing):
         else:
             self._upload_task = None
             # raise ValueError (f"Currently supported tracer types are 'langchain' and 'llamaindex'.")
-
-    def get_unique_files(self):
-        return self.file_tracker.get_unique_files()
+        
 
     def _improve_metadata(self, metadata, tracer_type):
         if metadata is None:
