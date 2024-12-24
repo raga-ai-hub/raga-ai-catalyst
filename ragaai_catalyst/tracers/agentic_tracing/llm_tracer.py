@@ -35,6 +35,8 @@ class LLMTracerMixin:
         self.current_component_id = None  
         self.total_tokens = 0
         self.total_cost = 0.0
+        # Track seen hash IDs to prevent duplicate traces
+        self.seen_hash_ids = set()
         # Apply decorator to trace_llm_call method
         self.trace_llm_call = mydecorator(self.trace_llm_call)
 
@@ -490,6 +492,15 @@ class LLMTracerMixin:
         component_id = str(uuid.uuid4())
         hash_id = self.trace_llm_call.hash_id
 
+        # Skip if we've already seen this hash_id
+        if hash_id in self.seen_hash_ids:
+            if asyncio.iscoroutinefunction(original_func):
+                return await original_func(*args, **kwargs)
+            return original_func(*args, **kwargs)
+
+        # Add hash_id to seen set
+        self.seen_hash_ids.add(hash_id)
+
         # Start tracking network calls for this component
         self.start_component(component_id)
 
@@ -621,6 +632,15 @@ class LLMTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = self.trace_llm_call.hash_id
+
+        # Skip if we've already seen this hash_id
+        if hash_id in self.seen_hash_ids:
+            if asyncio.iscoroutinefunction(original_func):
+                return asyncio.run(original_func(*args, **kwargs))
+            return original_func(*args, **kwargs)
+
+        # Add hash_id to seen set
+        self.seen_hash_ids.add(hash_id)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -776,10 +796,16 @@ class LLMTracerMixin:
 
     def unpatch_llm_calls(self):
         """Remove all patches"""
+        # Clear seen hash IDs
+        self.seen_hash_ids.clear()
+        
+        # Remove all patches
         for obj, method_name, original_method in self.patches:
-            if hasattr(obj, method_name):
+            try:
                 setattr(obj, method_name, original_method)
-        self.patches.clear()
+            except Exception as e:
+                print(f"Error unpatching {method_name}: {str(e)}")
+        self.patches = []
 
     def _sanitize_api_keys(self, data):
         """Remove sensitive information from data"""
