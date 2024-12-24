@@ -291,7 +291,10 @@ class LLMTracerMixin:
         """Extract token usage from result"""
         # Handle coroutines
         if asyncio.iscoroutine(result):
-            result = asyncio.run(result)
+            # Get the current event loop
+            loop = asyncio.get_event_loop()
+            # Run the coroutine in the current event loop
+            result = loop.run_until_complete(result)
 
         # Handle standard OpenAI/Anthropic format
         if hasattr(result, "usage"):
@@ -483,9 +486,7 @@ class LLMTracerMixin:
     async def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
         if not self.is_active:
-            if asyncio.iscoroutinefunction(original_func):
-                return await original_func(*args, **kwargs)
-            return original_func(*args, **kwargs)
+            return await original_func(*args, **kwargs)
 
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
@@ -494,9 +495,7 @@ class LLMTracerMixin:
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
-            if asyncio.iscoroutinefunction(original_func):
-                return await original_func(*args, **kwargs)
-            return original_func(*args, **kwargs)
+            return await original_func(*args, **kwargs)
 
         # Add hash_id to seen set
         self.seen_hash_ids.add(hash_id)
@@ -506,15 +505,7 @@ class LLMTracerMixin:
 
         try:
             # Execute the LLM call
-            result = None
-            if asyncio.iscoroutinefunction(original_func):
-                result = await original_func(*args, **kwargs)
-            else:
-                result = original_func(*args, **kwargs)
-
-            # If result is a coroutine, await it
-            if asyncio.iscoroutine(result):
-                result = await result
+            result = await original_func(*args, **kwargs)
 
             # Calculate resource usage
             end_time = datetime.now().astimezone()
@@ -582,7 +573,10 @@ class LLMTracerMixin:
         """Sync version of extract token usage"""
         # Handle coroutines
         if asyncio.iscoroutine(result):
-            result = asyncio.run(result)
+            # Get the current event loop
+            loop = asyncio.get_event_loop()
+            # Run the coroutine in the current event loop
+            result = loop.run_until_complete(result)
 
         # Handle standard OpenAI/Anthropic format
         if hasattr(result, "usage"):
@@ -723,7 +717,10 @@ class LLMTracerMixin:
         """Extract token usage from result"""
         # Handle coroutines
         if asyncio.iscoroutine(result):
-            result = await result
+            # Get the current event loop
+            loop = asyncio.get_event_loop()
+            # Run the coroutine in the current event loop
+            result = loop.run_until_complete(result)
 
         # Handle standard OpenAI/Anthropic format
         if hasattr(result, "usage"):
@@ -774,24 +771,24 @@ class LLMTracerMixin:
                         )
                 return func_or_class
             else:
-                @functools.wraps(func_or_class)
-                async def async_wrapper(*args, **kwargs):
-                    token = self.current_llm_call_name.set(name)
-                    try:
-                        return await func_or_class(*args, **kwargs)
-                    finally:
-                        self.current_llm_call_name.reset(token)
-
-                @functools.wraps(func_or_class)
-                def sync_wrapper(*args, **kwargs):
-                    token = self.current_llm_call_name.set(name)
-                    try:
-                        return func_or_class(*args, **kwargs)
-                    finally:
-                        self.current_llm_call_name.reset(token)
-
-                return async_wrapper if asyncio.iscoroutinefunction(func_or_class) else sync_wrapper
-
+                if asyncio.iscoroutinefunction(func_or_class):
+                    @functools.wraps(func_or_class)
+                    async def async_wrapper(*args, **kwargs):
+                        token = self.current_llm_call_name.set(name)
+                        try:
+                            return await self.trace_llm_call(func_or_class, *args, **kwargs)
+                        finally:
+                            self.current_llm_call_name.reset(token)
+                    return async_wrapper
+                else:
+                    @functools.wraps(func_or_class)
+                    def sync_wrapper(*args, **kwargs):
+                        token = self.current_llm_call_name.set(name)
+                        try:
+                            return self.trace_llm_call_sync(func_or_class, *args, **kwargs)
+                        finally:
+                            self.current_llm_call_name.reset(token)
+                    return sync_wrapper
         return decorator
 
     def unpatch_llm_calls(self):
