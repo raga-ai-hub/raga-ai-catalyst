@@ -19,6 +19,8 @@ from .data_structure import (
 )
 
 from ..upload_traces import UploadTraces
+from .upload_agentic_traces import UploadAgenticTraces
+from .upload_code import upload_code
 from ...ragaai_catalyst import RagaAICatalyst
 
 from .file_name_tracker import TrackName
@@ -56,7 +58,7 @@ class BaseTracer:
         self.trace_id = str(uuid.uuid4())
         self.start_time = datetime.now().isoformat()
         self.components: List[Component] = []
-        self.data_key = [{"start_time": self.start_time, 
+        self.data_key = [{"start_time": datetime.now().isoformat(), 
                         "end_time": "",
                         "spans": self.components
                         }]
@@ -154,7 +156,7 @@ class BaseTracer:
         self.trace = Trace(
             id=self.trace_id,
             project_name=self.project_name,
-            start_time=self.start_time,
+            start_time=datetime.now().isoformat(),
             end_time="",  # Will be set when trace is stopped
             metadata=metadata,
             data=self.data_key,
@@ -180,9 +182,9 @@ class BaseTracer:
 
             #get unique files and zip it. Generate a unique hash ID for the contents of the files
             list_of_unique_files = self.file_tracker.get_unique_files()
-            hash_id, permanent_zip_path = zip_list_of_unique_files(list_of_unique_files)
+            hash_id, zip_path = zip_list_of_unique_files(list_of_unique_files)
 
-            #replace source code with permanent_zip_path
+            #replace source code with zip_path
             self.trace.metadata.system_info.source_code = hash_id
 
             # Save to JSON file using custom encoder
@@ -198,7 +200,7 @@ class BaseTracer:
             dataset_name = self.dataset_name
             user_detail = self.user_details
             base_url = os.getenv('RAGAAI_CATALYST_BASE_URL')
-            upload_traces = UploadTraces(
+            upload_traces = UploadAgenticTraces(
                 json_file_path=json_file_path,
                 project_name=project_name,
                 project_id=project_id,
@@ -206,7 +208,16 @@ class BaseTracer:
                 user_detail=user_detail,
                 base_url=base_url
             )
-            upload_traces.upload_traces()
+            upload_traces.upload_agentic_traces()
+
+            #Upload Codehash
+            response = upload_code(
+                hash_id=hash_id,
+                zip_path=zip_path,
+                project_name=project_name,
+                dataset_name=dataset_name
+            )
+            print(response)
                 
     def add_component(self, component: Component):
         """Add a component to the trace"""
