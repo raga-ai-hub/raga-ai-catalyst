@@ -1,4 +1,5 @@
 import contextvars
+import imp
 from typing import Optional, Dict
 import json
 from datetime import datetime
@@ -11,6 +12,7 @@ from .llm_tracer import LLMTracerMixin
 from .tool_tracer import ToolTracerMixin
 from .agent_tracer import AgentTracerMixin
 from .network_tracer import NetworkTracer
+from .user_interaction_tracer import UserInteractionTracer
 
 from .data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
@@ -30,6 +32,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         LLMTracerMixin.__init__(self)
         ToolTracerMixin.__init__(self)
         AgentTracerMixin.__init__(self)
+        UserInteractionTracer.__init__(self)
         
         self.project_name = user_detail["project_name"]
         self.project_id = user_detail["project_id"]
@@ -147,47 +150,47 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         
         # Convert dict to appropriate Component type
         if component_data["type"] == "llm":
-            component = LLMComponent(**component_data)
-            # Add network calls specific to this LLM component
-            component_data["network_calls"] = self.component_network_calls.get(component_id, [])
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
             # Add user interaction for LLM calls
-            component_data["interactions"] = [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "content": component_data["data"]["input"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "content": component_data["data"]["output"]
-            }]
+            filtered_data["interactions"] = []
+            # Add print and input interactions from the actual calls
+            if "print_interactions" in component_data:
+                for interaction in component_data["print_interactions"]:
+                    filtered_data["interactions"].append(
+                        Interaction(
+                            type="print",
+                            content=str(interaction["content"]),
+                            timestamp=interaction["timestamp"]
+                        )
+                    )
+            if "input_interactions" in component_data:
+                for interaction in component_data["input_interactions"]:
+                    filtered_data["interactions"].append(
+                        Interaction(
+                            type="input",
+                            content=str(interaction["content"]),
+                            timestamp=interaction["timestamp"]
+                        )
+                    )
+            component = LLMComponent(**filtered_data)
         elif component_data["type"] == "agent":
-            component = AgentComponent(**component_data)
-            # Add network calls specific to this agent component
-            component_data["network_calls"] = self.component_network_calls.get(component_id, [])
-            # Add user interaction for agent
-            component_data["interactions"] = [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "content": component_data["data"]["input"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "content": component_data["data"]["output"]
-            }]
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
+            filtered_data["interactions"] = [
+                Interaction(type="print" if interaction.get("interaction_type") == "output" else "input",
+                          content=str(interaction.get("content", "")),
+                          timestamp=interaction.get("timestamp", datetime.utcnow().isoformat()))
+                for interaction in component_data.get("interactions", [])
+            ]
+            component = AgentComponent(**filtered_data)
         elif component_data["type"] == "tool":
-            component = ToolComponent(**component_data)
-            # Add network calls specific to this tool component
-            component_data["network_calls"] = self.component_network_calls.get(component_id, [])
-            # Add user interaction for tool
-            component_data["interactions"] = [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "content": component_data["data"]["input"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "content": component_data["data"]["output"]
-            }]
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
+            filtered_data["interactions"] = [
+                Interaction(type="print" if interaction.get("interaction_type") == "output" else "input",
+                          content=str(interaction.get("content", "")),
+                          timestamp=interaction.get("timestamp", datetime.utcnow().isoformat()))
+                for interaction in component_data.get("interactions", [])
+            ]
+            component = ToolComponent(**filtered_data)
         else:
             component = Component(**component_data)
         
@@ -201,6 +204,25 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         else:
             # Add component to the main trace
             super().add_component(component)
+
+    def add_interaction(self, interaction_type: str, content: str):
+        """Add an interaction (print or input) to the current span"""
+        if interaction_type not in ["print", "input"]:
+            raise ValueError("interaction_type must be either 'print' or 'input'")
+            
+        current_span = self.get_current_span()
+        if current_span is None:
+            return
+            
+        interaction = Interaction(
+            type=interaction_type,
+            content=content,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+        if not hasattr(current_span, "interactions"):
+            current_span.interactions = []
+        current_span.interactions.append(interaction)
 
     def __enter__(self):
         """Context manager entry"""

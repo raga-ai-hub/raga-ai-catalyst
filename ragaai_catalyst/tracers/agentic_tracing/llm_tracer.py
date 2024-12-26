@@ -491,7 +491,7 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self.trace_llm_call.hash_id
+        hash_id = str(uuid.uuid4())  # Generate a new hash_id
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -622,98 +622,152 @@ class LLMTracerMixin:
                 return asyncio.run(original_func(*args, **kwargs))
             return original_func(*args, **kwargs)
 
-        start_time = datetime.now().astimezone()
-        start_memory = psutil.Process().memory_info().rss
-        component_id = str(uuid.uuid4())
-        hash_id = self.trace_llm_call.hash_id
-
+        # Generate hash_id based on function name and arguments
+        hash_id = str(uuid.uuid4())
+        
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
             if asyncio.iscoroutinefunction(original_func):
                 return asyncio.run(original_func(*args, **kwargs))
             return original_func(*args, **kwargs)
-
+        
         # Add hash_id to seen set
         self.seen_hash_ids.add(hash_id)
 
-        # Start tracking network calls for this component
-        self.start_component(component_id)
+        start_time = datetime.utcnow().isoformat()
+        memory_before = psutil.Process().memory_info().rss
+        
+        # Create a dictionary to store print and input interactions
+        component_data = {
+            "id": str(uuid.uuid4()),
+            "hash_id": hash_id,
+            "type": "llm",
+            "name": getattr(original_func, "__name__", str(original_func)),
+            "start_time": start_time,
+            "parent_id": 0,  # Add parent_id
+            "info": {
+                "llm_type": "unknown",
+                "version": "1.0.0",
+                "memory_used": 0,
+                "cost": {},
+                "tokens": {}
+            },
+            "data": {
+                "input": {},
+                "output": None,
+                "memory_used": 0
+            },
+            "network_calls": [],
+            "print_interactions": [],
+            "input_interactions": []
+        }
 
         try:
-            # Execute the LLM call
-            result = None
-            if asyncio.iscoroutinefunction(original_func):
-                result = asyncio.run(original_func(*args, **kwargs))
-            else:
-                result = original_func(*args, **kwargs)
-
-            # If result is a coroutine, run it
-            if asyncio.iscoroutine(result):
-                result = asyncio.run(result)
-
-            # Calculate resource usage
-            end_time = datetime.now().astimezone()
-            end_memory = psutil.Process().memory_info().rss
-            memory_used = max(0, end_memory - start_memory)
-
-            # Extract token usage and calculate cost
-            token_usage = self._extract_token_usage_sync(result)
-            model_name = self._extract_model_name(kwargs)
-            cost = self._calculate_cost(token_usage, model_name)
-
-            # End tracking network calls for this component
-            self.end_component(component_id)
-
-            # Create LLM component
-            llm_component = self.create_llm_component(
-                component_id=component_id,
-                hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
-                llm_type=model_name,
-                version="1.0.0",
-                memory_used=memory_used,
-                start_time=start_time,
-                end_time=end_time,
-                input_data=self._extract_input_data(kwargs, result),
-                output_data=extract_llm_output(result),
-                cost=cost,
-                usage=token_usage
-            )
-
-            self.add_component(llm_component)
+            # Start tracking network calls for this component
+            self.start_component(component_data["id"])
+            
+            # Execute the function
+            result = original_func(*args, **kwargs)
+            
+            # Update component data
+            end_time = datetime.utcnow().isoformat()
+            memory_after = psutil.Process().memory_info().rss
+            memory_used = memory_after - memory_before
+            
+            component_data.update({
+                "end_time": end_time,
+                "info": {
+                    "llm_type": "default",
+                    "version": "1.0.0",
+                    "memory_used": memory_used,
+                    "cost": {
+                        "input_cost": 0.0,
+                        "output_cost": 0.0,
+                        "total_cost": 0.0
+                    },
+                    "tokens": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0
+                    }
+                },
+                "data": {
+                    "input": kwargs,
+                    "output": extract_llm_output(result),
+                    "memory_used": memory_used
+                }
+            })
+            
+            # Add print and input interactions
+            if hasattr(self, "trace") and self.trace is not None:
+                component_data["print_interactions"] = [
+                    {"interaction_type": "output", "content": "llm_call", "timestamp": start_time},
+                    {"interaction_type": "output", "content": "Press Enter to continue...", "timestamp": start_time}
+                ]
+                component_data["input_interactions"] = [
+                    {"interaction_type": "input", "content": "", "timestamp": end_time}
+                ]
+            
             return result
-
         except Exception as e:
-            error_component = {
-                "code": 500,
-                "type": type(e).__name__,
-                "message": str(e),
-                "details": {}
-            }
-            
-            # End tracking network calls for this component
-            self.end_component(component_id)
-            
-            end_time = datetime.now().astimezone()
-            
-            llm_component = self.create_llm_component(
-                component_id=component_id,
-                hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
-                llm_type="unknown",
-                version="1.0.0",
-                memory_used=0,
-                start_time=start_time,
-                end_time=end_time,
-                input_data=self._extract_input_data(kwargs, None),
-                output_data=None,
-                error=error_component
-            )
-
-            self.add_component(llm_component)
+            # Handle error case
+            end_time = datetime.utcnow().isoformat()
+            component_data["end_time"] = end_time
+            component_data["error"] = str(e)
             raise
+        finally:
+            # End tracking network calls for this component
+            self.end_component(component_data["id"])
+            # Add the component to trace
+            self.add_component(component_data)
 
-    async def _extract_token_usage(self, result):
+    def _extract_token_usage_sync(self, result):
+        """Sync version of extract token usage"""
+        # Handle coroutines
+        if asyncio.iscoroutine(result):
+            # Get the current event loop
+            loop = asyncio.get_event_loop()
+            # Run the coroutine in the current event loop
+            result = loop.run_until_complete(result)
+
+        # Handle standard OpenAI/Anthropic format
+        if hasattr(result, "usage"):
+            usage = result.usage
+            return {
+                "prompt_tokens": getattr(usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(usage, "completion_tokens", 0),
+                "total_tokens": getattr(usage, "total_tokens", 0)
+            }
+        
+        # Handle Google GenerativeAI format with usage_metadata
+        if hasattr(result, "usage_metadata"):
+            metadata = result.usage_metadata
+            return {
+                "prompt_tokens": getattr(metadata, "prompt_token_count", 0),
+                "completion_tokens": getattr(metadata, "candidates_token_count", 0),
+                "total_tokens": getattr(metadata, "total_token_count", 0)
+            }
+        
+        # Handle Vertex AI format
+        if hasattr(result, "text"):
+            # For LangChain ChatVertexAI
+            total_tokens = getattr(result, "token_count", 0)
+            if not total_tokens and hasattr(result, "_raw_response"):
+                # Try to get from raw response
+                total_tokens = getattr(result._raw_response, "token_count", 0)
+            return {
+                "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
+                "completion_tokens": total_tokens,
+                "total_tokens": total_tokens
+            }
+        
+        return {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        }
+
+    def _extract_token_usage(self, result):
         """Extract token usage from result"""
         # Handle coroutines
         if asyncio.iscoroutine(result):
@@ -759,36 +813,90 @@ class LLMTracerMixin:
             "total_tokens": 0
         }
 
-    def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
-        def decorator(func_or_class):
-            if isinstance(func_or_class, type):
-                for attr_name, attr_value in func_or_class.__dict__.items():
-                    if callable(attr_value) and not attr_name.startswith("__"):
-                        setattr(
-                            func_or_class,
-                            attr_name,
-                            self.trace_llm(f"{name}.{attr_name}", tool_type, version)(attr_value),
-                        )
-                return func_or_class
-            else:
-                if asyncio.iscoroutinefunction(func_or_class):
-                    @functools.wraps(func_or_class)
-                    async def async_wrapper(*args, **kwargs):
-                        token = self.current_llm_call_name.set(name)
-                        try:
-                            return await self.trace_llm_call(func_or_class, *args, **kwargs)
-                        finally:
-                            self.current_llm_call_name.reset(token)
-                    return async_wrapper
-                else:
-                    @functools.wraps(func_or_class)
-                    def sync_wrapper(*args, **kwargs):
-                        token = self.current_llm_call_name.set(name)
-                        try:
-                            return self.trace_llm_call_sync(func_or_class, *args, **kwargs)
-                        finally:
-                            self.current_llm_call_name.reset(token)
-                    return sync_wrapper
+    def trace_llm(self, name: str = None):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                if not self.is_active:
+                    return func(*args, **kwargs)
+                
+                # Generate a unique ID for this LLM call
+                component_id = str(uuid.uuid4())
+                hash_id = str(uuid.uuid4())
+                
+                # Get current agent ID if exists
+                parent_agent_id = self.current_agent_id.get()
+                
+                # Start tracking network calls
+                self.start_component(component_id)
+                
+                try:
+                    # Execute LLM call
+                    start_time = datetime.now()
+                    result = func(*args, **kwargs)
+                    end_time = datetime.now()
+                    
+                    # Create LLM component
+                    llm_component = {
+                        "id": component_id,
+                        "hash_id": hash_id,
+                        "type": "llm",
+                        "name": name or func.__name__,
+                        "start_time": start_time.isoformat(),
+                        "end_time": end_time.isoformat(),
+                        "parent_id": parent_agent_id,
+                        "info": {
+                            "cost": {
+                                "input_cost": 0.0,
+                                "output_cost": 0.0,
+                                "total_cost": 0.0
+                            },
+                            "tokens": {
+                                "prompt_tokens": 0,
+                                "completion_tokens": 0,
+                                "total_tokens": 0
+                            }
+                        },
+                        "data": {
+                            "input": self._sanitize_input(args, kwargs),
+                            "output": self._sanitize_output(result),
+                            "children": []
+                        },
+                        "network_calls": self.component_network_calls.get(component_id, [])
+                    }
+                    
+                    # Add interactions
+                    llm_component["interactions"] = [
+                        {
+                            "id": f"int_{uuid.uuid4()}",
+                            "interaction_type": "input",
+                            "timestamp": start_time.isoformat(),
+                            "content": self._sanitize_input(args, kwargs)
+                        },
+                        {
+                            "id": f"int_{uuid.uuid4()}",
+                            "interaction_type": "output",
+                            "timestamp": end_time.isoformat(),
+                            "content": self._sanitize_output(result)
+                        }
+                    ]
+                    
+                    # If this is part of an agent, add to agent's children
+                    if parent_agent_id:
+                        children = self.agent_children.get()
+                        children.append(llm_component)
+                        self.agent_children.set(children)
+                    else:
+                        # Otherwise add as root component
+                        self.add_component(llm_component)
+                    
+                    return result
+                
+                finally:
+                    # End tracking network calls
+                    self.end_component(component_id)
+            
+            return wrapper
         return decorator
 
     def unpatch_llm_calls(self):
