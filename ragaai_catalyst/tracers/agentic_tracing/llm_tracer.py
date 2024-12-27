@@ -10,6 +10,7 @@ import os
 import contextvars
 import sys
 import gc
+import traceback
 
 from .unique_decorator import mydecorator
 from .utils.trace_utils import calculate_cost, load_model_costs
@@ -491,13 +492,14 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid4())  # Generate a new hash_id
+        hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{original_func.__name__}_{str(args)}_{str(kwargs)}"))  # Generate a new hash_id
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
+            print(f"Duplicate LLM call detected with hash: {hash_id}")
             return await original_func(*args, **kwargs)
 
-        # Add hash_id to seen set
+        print(f"New LLM call with hash: {hash_id}")
         self.seen_hash_ids.add(hash_id)
 
         # Start tracking network calls for this component
@@ -622,16 +624,18 @@ class LLMTracerMixin:
                 return asyncio.run(original_func(*args, **kwargs))
             return original_func(*args, **kwargs)
 
-        # Generate hash_id based on function name and arguments
-        hash_id = str(uuid.uuid4())
+        # Generate hash ID based on function name and arguments
+        hash_input = f"{original_func.__name__}_{str(args)}_{str(kwargs)}"
+        hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, hash_input))
         
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
+            print(f"Duplicate LLM call detected with hash: {hash_id}")
             if asyncio.iscoroutinefunction(original_func):
                 return asyncio.run(original_func(*args, **kwargs))
             return original_func(*args, **kwargs)
         
-        # Add hash_id to seen set
+        print(f"New LLM call with hash: {hash_id}")
         self.seen_hash_ids.add(hash_id)
 
         start_time = datetime.utcnow().isoformat()
@@ -820,9 +824,20 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return func(*args, **kwargs)
                 
+                # Generate hash ID based on function name, args, and kwargs
+                hash_input = f"{name or func.__name__}_{str(args)}_{str(kwargs)}"
+                hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, hash_input))
+                
+                # Check if we've already traced this call
+                if hash_id in self.seen_hash_ids:
+                    print(f"Duplicate LLM call detected with hash: {hash_id}")
+                    return func(*args, **kwargs)
+                
+                print(f"New LLM call with hash: {hash_id}")
+                self.seen_hash_ids.add(hash_id)
+                
                 # Generate a unique ID for this LLM call
                 component_id = str(uuid.uuid4())
-                hash_id = str(uuid.uuid4())
                 
                 # Get current agent ID if exists
                 parent_agent_id = self.current_agent_id.get()
@@ -830,10 +845,25 @@ class LLMTracerMixin:
                 # Start tracking network calls
                 self.start_component(component_id)
                 
+                start_time = datetime.now()
+                error_info = None
+                result = None
+                
                 try:
                     # Execute LLM call
-                    start_time = datetime.now()
                     result = func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    error_info = {
+                        "error": {
+                            "type": type(e).__name__,
+                            "message": str(e),
+                            "traceback": traceback.format_exc(),
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    }
+                    raise
+                finally:
                     end_time = datetime.now()
                     
                     # Create LLM component
@@ -845,6 +875,7 @@ class LLMTracerMixin:
                         "start_time": start_time.isoformat(),
                         "end_time": end_time.isoformat(),
                         "parent_id": parent_agent_id,
+                        "error": error_info["error"] if error_info else None,  # Add error at root level
                         "info": {
                             "cost": {
                                 "input_cost": 0.0,
@@ -855,11 +886,13 @@ class LLMTracerMixin:
                                 "prompt_tokens": 0,
                                 "completion_tokens": 0,
                                 "total_tokens": 0
-                            }
+                            },
+                            "error": error_info["error"] if error_info else None  # Add error in info section
                         },
                         "data": {
                             "input": self._sanitize_input(args, kwargs),
-                            "output": self._sanitize_output(result),
+                            "output": self._sanitize_output(result) if result else None,
+                            "error": error_info["error"] if error_info else None,  # Add error in data section
                             "children": []
                         },
                         "network_calls": self.component_network_calls.get(component_id, [])
@@ -872,14 +905,25 @@ class LLMTracerMixin:
                             "interaction_type": "input",
                             "timestamp": start_time.isoformat(),
                             "content": self._sanitize_input(args, kwargs)
-                        },
-                        {
+                        }
+                    ]
+                    
+                    # Only add output interaction if there was no error
+                    if not error_info:
+                        llm_component["interactions"].append({
                             "id": f"int_{uuid.uuid4()}",
                             "interaction_type": "output",
                             "timestamp": end_time.isoformat(),
                             "content": self._sanitize_output(result)
-                        }
-                    ]
+                        })
+                    else:
+                        # Add error interaction
+                        llm_component["interactions"].append({
+                            "id": f"int_{uuid.uuid4()}",
+                            "interaction_type": "error",
+                            "timestamp": end_time.isoformat(),
+                            "content": error_info["error"]
+                        })
                     
                     # If this is part of an agent, add to agent's children
                     if parent_agent_id:
@@ -890,9 +934,6 @@ class LLMTracerMixin:
                         # Otherwise add as root component
                         self.add_component(llm_component)
                     
-                    return result
-                
-                finally:
                     # End tracking network calls
                     self.end_component(component_id)
             
