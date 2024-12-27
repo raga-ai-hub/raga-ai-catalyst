@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 import uuid
 import os
+import builtins
 from pathlib import Path
 
 from .base import BaseTracer
@@ -32,7 +33,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         LLMTracerMixin.__init__(self)
         ToolTracerMixin.__init__(self)
         AgentTracerMixin.__init__(self)
-        UserInteractionTracer.__init__(self)
+        self.user_interaction_tracer = UserInteractionTracer()
         
         self.project_name = user_detail["project_name"]
         self.project_id = user_detail["project_id"]
@@ -75,6 +76,13 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         # Activate network tracing
         self.network_tracer.activate_patches()
         
+        # Setup user interaction tracing
+        self.user_interaction_tracer.project_id.set(self.project_id)
+        self.user_interaction_tracer.trace_id.set(self.trace_id)
+        self.user_interaction_tracer.tracer = self
+        builtins.print = self.user_interaction_tracer.traced_print
+        builtins.input = self.user_interaction_tracer.traced_input
+        
         # Instrument calls from mixins
         if self.auto_instrument_llm:
             self.instrument_llm_calls()
@@ -82,6 +90,10 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
     def stop(self):
         """Stop tracing and save results"""
         if self.is_active:
+            # Restore original print and input functions
+            builtins.print = self.user_interaction_tracer.original_print
+            builtins.input = self.user_interaction_tracer.original_input
+            
             # Calculate final metrics before stopping
             self._calculate_final_metrics()
             
