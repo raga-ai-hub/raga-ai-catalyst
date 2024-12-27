@@ -1,0 +1,334 @@
+{
+  "id": "ed050fde-8705-4635-8570-3aa7f6e4b286",
+  "project_name": "prompt_metric_dataset",
+  "start_time": "2024-12-27T09:37:52.105409+00:00",
+  "end_time": "2024-12-27T15:07:55.984055",
+  "metadata": {
+    "cost": {
+      "input_cost": 0.0,
+      "output_cost": 0.0,
+      "total_cost": 0.0
+    },
+    "tokens": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0
+    },
+    "system_info": {
+      "id": "sys_ed050fde-8705-4635-8570-3aa7f6e4b286",
+      "os": {
+        "name": "Darwin",
+        "version": "Darwin Kernel Version 24.1.0: Thu Oct 10 21:03:15 PDT 2024; root:xnu-11215.41.3~2/RELEASE_ARM64_T6000",
+        "platform": "arm64",
+        "kernel_version": "24.1.0"
+      },
+      "environment": {
+        "name": "Python",
+        "version": "3.11.11",
+        "packages": [
+          "deprecated==1.2.15",
+          "markdown==3.7",
+          "markupsafe==3.0.2",
+          "pyyaml==6.0.2",
+          "sqlalchemy==2.0.36",
+          "aiohappyeyeballs==2.4.4",
+          "aiohttp==3.10.2",
+          "aiosignal==1.3.2",
+          "annotated-types==0.7.0",
+          "anyio==4.7.0",
+          "appnope==0.1.4",
+          "asttokens==3.0.0",
+          "attrs==24.3.0",
+          "beautifulsoup4==4.12.3",
+          "cachetools==5.5.0",
+          "certifi==2024.12.14",
+          "charset-normalizer==3.4.0",
+          "click==8.1.8",
+          "comm==0.2.2",
+          "debugpy==1.6.7",
+          "decorator==5.1.1",
+          "distro==1.9.0",
+          "exceptiongroup==1.2.2",
+          "executing==2.1.0",
+          "filelock==3.16.1",
+          "frozenlist==1.5.0",
+          "fsspec==2024.12.0",
+          "google==3.0.0",
+          "google-ai-generativelanguage==0.6.10",
+          "google-api-core==2.24.0",
+          "google-api-python-client==2.156.0",
+          "google-auth==2.37.0",
+          "google-auth-httplib2==0.2.0",
+          "google-generativeai==0.8.3",
+          "googleapis-common-protos==1.66.0",
+          "groq==0.13.1",
+          "grpcio==1.68.1",
+          "grpcio-status==1.68.1",
+          "h11==0.14.0",
+          "httpcore==1.0.7",
+          "httplib2==0.22.0",
+          "httpx==0.28.1",
+          "huggingface-hub==0.27.0",
+          "idna==3.10",
+          "importlib-metadata==7.1.0",
+          "ipykernel==6.29.5",
+          "ipython==8.31.0",
+          "jedi==0.19.2",
+          "jinja2==3.1.5",
+          "jiter==0.8.2",
+          "jsonpatch==1.33",
+          "jsonpointer==3.0.0",
+          "jsonschema==4.23.0",
+          "jsonschema-specifications==2024.10.1",
+          "jupyter-client==8.6.3",
+          "jupyter-core==5.7.2",
+          "langchain-core==0.2.11",
+          "langsmith==0.1.147",
+          "litellm==1.42.12",
+          "matplotlib-inline==0.1.7",
+          "multidict==6.1.0",
+          "nest-asyncio==1.6.0",
+          "numpy==2.2.1",
+          "openai==1.58.1",
+          "opentelemetry-api==1.25.0",
+          "opentelemetry-instrumentation==0.46b0",
+          "opentelemetry-instrumentation-langchain==0.24.0",
+          "opentelemetry-instrumentation-openai==0.24.0",
+          "opentelemetry-sdk==1.25.0",
+          "opentelemetry-semantic-conventions==0.46b0",
+          "opentelemetry-semantic-conventions-ai==0.3.3",
+          "orjson==3.10.12",
+          "packaging==24.2",
+          "pandas==2.2.3",
+          "parso==0.8.4",
+          "pexpect==4.9.0",
+          "pickleshare==0.7.5",
+          "pip==24.2",
+          "platformdirs==4.3.6",
+          "prompt-toolkit==3.0.48",
+          "propcache==0.2.1",
+          "proto-plus==1.25.0",
+          "protobuf==5.29.2",
+          "psutil==5.9.0",
+          "ptyprocess==0.7.0",
+          "pure-eval==0.2.3",
+          "pyasn1==0.6.1",
+          "pyasn1-modules==0.4.1",
+          "pydantic==2.10.4",
+          "pydantic-core==2.27.2",
+          "pygments==2.18.0",
+          "pyparsing==3.2.0",
+          "pypdf2==3.0.1",
+          "python-dateutil==2.9.0.post0",
+          "python-dotenv==1.0.1",
+          "pytz==2024.2",
+          "pyzmq==26.2.0",
+          "referencing==0.35.1",
+          "regex==2024.11.6",
+          "requests==2.32.3",
+          "requests-toolbelt==1.0.0",
+          "rpds-py==0.22.3",
+          "rsa==4.9",
+          "setuptools==75.1.0",
+          "six==1.17.0",
+          "sniffio==1.3.1",
+          "soupsieve==2.6",
+          "stack-data==0.6.3",
+          "tenacity==8.5.0",
+          "tiktoken==0.8.0",
+          "tokenizers==0.21.0",
+          "toml==0.10.2",
+          "tornado==6.4.2",
+          "tqdm==4.67.1",
+          "traitlets==5.14.3",
+          "typing-extensions==4.12.2",
+          "tzdata==2024.2",
+          "uritemplate==4.1.1",
+          "urllib3==2.3.0",
+          "wcwidth==0.2.13",
+          "wheel==0.44.0",
+          "wrapt==1.17.0",
+          "yarl==1.18.3",
+          "zipp==3.21.0",
+          "autocommand==2.2.2",
+          "backports.tarfile==1.2.0",
+          "importlib-resources==6.4.0",
+          "inflect==7.3.1",
+          "jaraco.collections==5.1.0",
+          "jaraco.context==5.3.0",
+          "jaraco.functools==4.0.1",
+          "jaraco.text==3.12.1",
+          "more-itertools==10.3.0",
+          "tomli==2.0.1",
+          "typeguard==4.3.0"
+        ],
+        "env_path": "/Users/abs/miniconda3/envs/catalyst",
+        "command_to_run": "python sync_sample_llm_testing.py"
+      },
+      "source_code": "Path to the source code .zip file in format hashid.zip"
+    },
+    "resources": {
+      "cpu": {
+        "info": {
+          "name": "arm",
+          "cores": 10,
+          "threads": 10
+        },
+        "interval": "5s",
+        "values": [
+          11.5
+        ]
+      },
+      "memory": {
+        "info": {
+          "total": 16.0,
+          "free": 6.57427978515625
+        },
+        "interval": "5s",
+        "values": [
+          58.9
+        ]
+      },
+      "disk": {
+        "info": {
+          "total": 460.4317207336426,
+          "free": 154.48008728027344
+        },
+        "interval": "5s",
+        "read": [
+          17643.99755859375
+        ],
+        "write": [
+          12274.8515625
+        ]
+      },
+      "network": {
+        "info": {
+          "upload_speed": 2231.6455078125,
+          "download_speed": 2866.7568359375
+        },
+        "interval": "5s",
+        "uploads": [
+          2231.6455078125
+        ],
+        "downloads": [
+          2866.7568359375
+        ]
+      }
+    },
+    "total_cost": 0.0,
+    "total_tokens": 0
+  },
+  "data": [
+    {
+      "start_time": "2024-12-27T15:07:52.105330",
+      "end_time": "2024-12-27T15:07:55.984045",
+      "spans": [
+        {
+          "id": 1,
+          "hash_id": "ff175faa-d248-51e2-b5e0-2d92b561db1d",
+          "type": "llm",
+          "name": "create",
+          "start_time": "2024-12-27T09:37:53.791274",
+          "end_time": "2024-12-27T09:37:55.983147",
+          "parent_id": 0,
+          "info": {
+            "llm_type": "default",
+            "version": "1.0.0",
+            "memory_used": 344064,
+            "cost": {
+              "input_cost": 0.0,
+              "output_cost": 0.0,
+              "total_cost": 0.0
+            },
+            "tokens": {
+              "prompt_tokens": 0,
+              "completion_tokens": 0,
+              "total_tokens": 0
+            }
+          },
+          "data": {
+            "input": {
+              "model": "gpt-3.5-turbo",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": "Write a poem about a unicorn"
+                }
+              ],
+              "max_tokens": 512,
+              "temperature": 0.7,
+              "seed": -253
+            },
+            "output": {
+              "output_response": [
+                {
+                  "content": "In the meadow, under the moon's soft glow,\nThere dances a creature with a radiant glow.\nA unicorn, pure and wild and free,\nWith a mane of gold and eyes that see.\n\nIts horn gleams like a diamond in the night,\nA beacon of hope, a guiding light.\nIt prances and plays in fields of green,\nA mystical sight, like none ever seen.\n\nWith grace and beauty, it moves with ease,\nThrough forests and streams, with gentle breeze.\nIts presence brings joy to all it meets,\nA magical being, so rare and sweet.\n\nOh unicorn, with your spirit bright,\nYou fill our hearts with pure delight.\nForever shall you roam the land,\nA symbol of magic, so grand.\n\nSo let us cherish this wondrous sight,\nThe unicorn, so pure and bright.\nFor in its presence, we find peace,\nA reminder that magic will never cease.",
+                  "role": "assistant"
+                }
+              ]
+            },
+            "memory_used": 344064
+          },
+          "network_calls": [],
+          "interactions": [
+            {
+              "type": "print",
+              "content": "llm_call",
+              "timestamp": "2024-12-27T09:37:53.791274"
+            },
+            {
+              "type": "print",
+              "content": "Press Enter to continue...",
+              "timestamp": "2024-12-27T09:37:53.791274"
+            },
+            {
+              "type": "input",
+              "content": "",
+              "timestamp": "2024-12-27T09:37:55.983147"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "hash_id": "52e5eb59-b84c-5e8f-b4cc-f76b159c1023",
+          "type": "llm",
+          "name": "llm_call",
+          "start_time": "2024-12-27T15:07:52.900329",
+          "end_time": "2024-12-27T15:07:55.983785",
+          "parent_id": 0,
+          "info": {
+            "cost": {
+              "input_cost": 0.0,
+              "output_cost": 0.0,
+              "total_cost": 0.0
+            },
+            "tokens": {
+              "prompt_tokens": 0,
+              "completion_tokens": 0,
+              "total_tokens": 0
+            },
+            "error": null
+          },
+          "data": {
+            "input": {
+              "args": [
+                "Write a poem about a unicorn"
+              ],
+              "kwargs": {}
+            },
+            "output": "In the meadow, under the moon's soft glow,\nThere dances a creature with a radiant glow.\nA unicorn, pure and wild and free,\nWith a mane of gold and eyes that see.\n\nIts horn gleams like a diamond in the night,\nA beacon of hope, a guiding light.\nIt prances and plays in fields of green,\nA mystical sight, like none ever seen.\n\nWith grace and beauty, it moves with ease,\nThrough forests and streams, with gentle breeze.\nIts presence brings joy to all it meets,\nA magical being, so rare and sweet.\n\nOh unicorn, with your spirit bright,\nYou fill our hearts with pure delight.\nForever shall you roam the land,\nA symbol of magic, so grand.\n\nSo let us cherish this wondrous sight,\nThe unicorn, so pure and bright.\nFor in its presence, we find peace,\nA reminder that magic will never cease.",
+            "error": null,
+            "children": []
+          },
+          "network_calls": [],
+          "interactions": []
+        }
+      ]
+    }
+  ],
+  "replays": {
+    "source": null
+  },
+  "components": []
+}

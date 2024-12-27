@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 
 @dataclass
@@ -99,12 +99,18 @@ class NetworkCall:
     request: Dict[str, Any]
     response: Dict[str, Any]
 
-@dataclass
 class Interaction:
-    id: str
-    interaction_type: str
-    content: Optional[str]
-    timestamp: str
+    def __init__(self, type: str, content: str, timestamp: str):
+        self.type = type
+        self.content = content
+        self.timestamp = timestamp
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "content": self.content,
+            "timestamp": self.timestamp
+        }
 
 @dataclass
 class Error:
@@ -150,54 +156,58 @@ class ToolInfo:
     version: str
     memory_used: int
 
-@dataclass
-class LLMComponent:
-    id: str
-    hash_id: str
-    source_hash_id: Optional[str]
-    type: str = "llm"
-    name: str = ""
-    start_time: str = ""
-    end_time: str = ""
-    error: Optional[Error] = None
-    parent_id: Optional[str] = None
-    info: LLMInfo = None
-    data: Dict[str, Any] = None
-    network_calls: List[NetworkCall] = None
-    interactions: List[Interaction] = None
+class Component:
+    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None):
+        self.id = id
+        self.hash_id = hash_id
+        self.type = type
+        self.name = name
+        self.start_time = start_time
+        self.end_time = end_time
+        self.parent_id = parent_id
+        self.info = info
+        self.data = data
+        self.network_calls = network_calls or []
+        self.interactions = []
+        if interactions:
+            for interaction in interactions:
+                if isinstance(interaction, dict):
+                    self.interactions.append(
+                        Interaction(
+                            type=interaction.get("type", "print"),
+                            content=str(interaction.get("content", "")),
+                            timestamp=interaction.get("timestamp", datetime.utcnow().isoformat())
+                        )
+                    )
+                else:
+                    self.interactions.append(interaction)
 
-@dataclass
-class AgentComponent:
-    id: str
-    hash_id: str
-    source_hash_id: Optional[str]
-    type: str = "agent"
-    name: str = ""
-    start_time: str = ""
-    end_time: str = ""
-    error: Optional[Error] = None
-    parent_id: Optional[str] = None
-    info: AgentInfo = None
-    data: Dict[str, Any] = None
-    network_calls: List[NetworkCall] = None
-    interactions: List[Interaction] = None
-    # children: List['Component'] = None
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "hash_id": self.hash_id,
+            "type": self.type,
+            "name": self.name,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "parent_id": self.parent_id,
+            "info": self.info,
+            "data": self.data,
+            "network_calls": [call.to_dict() if hasattr(call, 'to_dict') else call for call in self.network_calls],
+            "interactions": [interaction.to_dict() for interaction in self.interactions]
+        }
 
-@dataclass
-class ToolComponent:
-    id: str
-    hash_id: str
-    source_hash_id: Optional[str]
-    type: str = "tool"
-    name: str = ""
-    start_time: str = ""
-    end_time: str = ""
-    error: Optional[Error] = None
-    parent_id: Optional[str] = None
-    info: ToolInfo = None
-    data: Dict[str, Any] = None
-    network_calls: List[NetworkCall] = None
-    interactions: List[Interaction] = None
+class LLMComponent(Component):
+    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None):
+        super().__init__(id, hash_id, type, name, start_time, end_time, parent_id, info, data, network_calls, interactions)
+
+class AgentComponent(Component):
+    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None):
+        super().__init__(id, hash_id, type, name, start_time, end_time, parent_id, info, data, network_calls, interactions)
+
+class ToolComponent(Component):
+    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None):
+        super().__init__(id, hash_id, type, name, start_time, end_time, parent_id, info, data, network_calls, interactions)
 
 @dataclass
 class ComponentInfo:
@@ -211,29 +221,38 @@ class ComponentInfo:
     token_usage: Optional[Dict[str, int]] = None
     cost: Optional[Dict[str, float]] = None
 
-@dataclass
-class Component:
-    id: str
-    hash_id: str
-    source_hash_id: Optional[str]
-    type: str
-    name: str
-    start_time: str
-    end_time: str
-    error: Optional[Error]
-    parent_id: Optional[str]
-    info: ComponentInfo
-    data: Dict[str, Any]
-    network_calls: List[NetworkCall]
-    interactions: List[Interaction]
-    children: Optional[List['Component']] = None
-
-@dataclass
 class Trace:
-    id: str
-    project_name: str
-    start_time: str
-    end_time: str
-    metadata: Metadata
-    data: List[Dict[str, Any]]
-    replays: Optional[Dict[str, Any]]
+    def __init__(self, id: str, project_name: str, start_time: str, end_time: str, metadata: Optional[Metadata] = None, data: Optional[List[Dict[str, Any]]] = None, replays: Optional[Dict[str, Any]] = None):
+        self.id = id
+        self.project_name = project_name
+        self.start_time = start_time
+        self.end_time = end_time
+        self.metadata = metadata or Metadata()
+        self.data = data or []
+        self.replays = replays
+        self.components = []
+
+    def add_interaction(self, type: str, content: str):
+        """Add an interaction to the current component's span"""
+        if not self.components:
+            return
+
+        current_component = self.components[-1]
+        interaction = Interaction(
+            type=type,
+            content=content,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        current_component.interactions.append(interaction)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "project_name": self.project_name,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "metadata": self.metadata.to_dict() if self.metadata else None,
+            "data": self.data,
+            "replays": self.replays,
+            "components": [component.to_dict() for component in self.components]
+        }
