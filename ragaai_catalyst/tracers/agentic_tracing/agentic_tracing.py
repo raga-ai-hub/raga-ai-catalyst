@@ -1,5 +1,4 @@
 import contextvars
-import imp
 from typing import Optional, Dict
 import json
 from datetime import datetime
