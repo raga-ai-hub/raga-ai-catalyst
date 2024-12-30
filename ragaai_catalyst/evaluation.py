@@ -4,7 +4,6 @@ import pandas as pd
 import io
 from .ragaai_catalyst import RagaAICatalyst
 import logging
-import pdb
 
 logger = logging.getLogger(__name__)
 

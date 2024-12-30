@@ -161,46 +161,17 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         
         # Convert dict to appropriate Component type
         if component_data["type"] == "llm":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
             # Add user interaction for LLM calls
-            filtered_data["interactions"] = []
-            # Add print and input interactions from the actual calls
-            if "print_interactions" in component_data:
-                for interaction in component_data["print_interactions"]:
-                    filtered_data["interactions"].append(
-                        Interaction(
-                            type="print",
-                            content=str(interaction["content"]),
-                            timestamp=interaction["timestamp"]
-                        )
-                    )
-            if "input_interactions" in component_data:
-                for interaction in component_data["input_interactions"]:
-                    filtered_data["interactions"].append(
-                        Interaction(
-                            type="input",
-                            content=str(interaction["content"]),
-                            timestamp=interaction["timestamp"]
-                        )
-                    )
+            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = LLMComponent(**filtered_data)
         elif component_data["type"] == "agent":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
-            filtered_data["interactions"] = [
-                Interaction(type="print" if interaction.get("interaction_type") == "output" else "input",
-                          content=str(interaction.get("content", "")),
-                          timestamp=interaction.get("timestamp", datetime.utcnow().isoformat()))
-                for interaction in component_data.get("interactions", [])
-            ]
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
+            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = AgentComponent(**filtered_data)
         elif component_data["type"] == "tool":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
-            filtered_data["interactions"] = [
-                Interaction(type="print" if interaction.get("interaction_type") == "output" else "input",
-                          content=str(interaction.get("content", "")),
-                          timestamp=interaction.get("timestamp", datetime.utcnow().isoformat()))
-                for interaction in component_data.get("interactions", [])
-            ]
+            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
+            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = ToolComponent(**filtered_data)
         else:
             component = Component(**component_data)
@@ -218,8 +189,8 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
 
     def add_interaction(self, interaction_type: str, content: str):
         """Add an interaction (print or input) to the current span"""
-        if interaction_type not in ["print", "input"]:
-            raise ValueError("interaction_type must be either 'print' or 'input'")
+        # if interaction_type not in ["print", "input"]:
+        #     raise ValueError("interaction_type must be either 'print' or 'input'")
             
         current_span = self.get_current_span()
         if current_span is None:

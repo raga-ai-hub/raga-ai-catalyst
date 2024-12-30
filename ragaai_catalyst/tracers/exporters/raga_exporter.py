@@ -7,7 +7,6 @@ from tqdm import tqdm
 import requests
 from ...ragaai_catalyst import RagaAICatalyst
 import shutil
-import pdb
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +195,6 @@ class RagaExporter:
         return status_code
 
     async def get_presigned_url(self, session, num_files):
-        # pdb.set_trace()
         """
         Asynchronously retrieves a presigned URL from the RagaExporter API.
 
@@ -213,7 +211,6 @@ class RagaExporter:
         """
 
         async def make_request():
-            # pdb.set_trace()
 
             json_data = {
                 "datasetName": self.dataset_name,
@@ -296,8 +293,7 @@ class RagaExporter:
         return response.status
 
     async def upload_file(self, session, url, file_path):
-        # pdb.set_trace()
-        # print('url', url)
+
         """
         Asynchronously uploads a file using the given session, url, and file path.
         Supports both regular and Azure blob storage URLs.
@@ -345,8 +341,6 @@ class RagaExporter:
         return response.status
 
     async def check_and_upload_files(self, session, file_paths):
-        # print(file_paths)
-        # pdb.set_trace()
         """
         Checks if there are files to upload, gets presigned URLs, uploads files, and streams them if successful.
 

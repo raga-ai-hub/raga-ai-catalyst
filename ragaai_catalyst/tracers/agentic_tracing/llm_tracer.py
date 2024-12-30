@@ -703,8 +703,7 @@ class LLMTracerMixin:
                 "memory_used": 0
             },
             "network_calls": [],
-            "print_interactions": [],
-            "input_interactions": []
+            "interactions": []
         }
 
         try:
@@ -740,7 +739,7 @@ class LLMTracerMixin:
             
             # Add user interactions if they exist
             if hasattr(self, "trace") and self.trace is not None:
-                component_data["user_interactions"] = self.trace.get_interactions()
+                component_data["interactions"] = self.trace.get_interactions()
             
             return result
         except Exception as e:

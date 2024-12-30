@@ -107,7 +107,7 @@ class Interaction:
 
     def to_dict(self):
         return {
-            "type": self.type,
+            "interaction_type": self.type,
             "content": self.content,
             "timestamp": self.timestamp
         }
@@ -174,7 +174,7 @@ class Component:
                 if isinstance(interaction, dict):
                     self.interactions.append(
                         Interaction(
-                            type=interaction.get("type", "print"),
+                            type=interaction.get("interaction_type", ""),
                             content=str(interaction.get("content", "")),
                             timestamp=interaction.get("timestamp", datetime.utcnow().isoformat())
                         )

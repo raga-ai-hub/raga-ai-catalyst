@@ -23,10 +23,6 @@ except FileNotFoundError:
 
 
 def extract_llm_output(result):
-
-    # import pdb
-
-    # pdb.set_trace()
     # Initialize variables
     model_name = None
     output_response = ""

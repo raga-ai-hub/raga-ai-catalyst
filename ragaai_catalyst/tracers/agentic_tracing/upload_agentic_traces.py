@@ -115,7 +115,6 @@ class UploadAgenticTraces:
             return None
 
     def insert_traces(self, presignedUrl):
-        # import pdb; pdb.set_trace()
         headers = {
                 "Authorization": f"Bearer {os.getenv('RAGAAI_CATALYST_TOKEN')}",
                 "Content-Type": "application/json",
@@ -173,7 +172,6 @@ class UploadAgenticTraces:
             return None
     
     def upload_agentic_traces(self):
-        # import pdb; pdb.set_trace()
         self._create_dataset_schema_with_trace()
         presignedUrl = self._get_presigned_url()
         if presignedUrl is None:

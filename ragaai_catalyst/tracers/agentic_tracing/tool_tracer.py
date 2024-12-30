@@ -195,7 +195,7 @@ class ToolTracerMixin:
                 "memory_used": kwargs["memory_used"]
             },
             "data": {
-                "input": kwargs["input_data"],
+                "input": kwargs["input_data"]["args"],
                 "output": kwargs["output_data"],
                 "memory_used": kwargs["memory_used"]
             },

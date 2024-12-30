@@ -192,7 +192,6 @@ class BaseTracer:
                 json.dump(self.trace.__dict__, f, cls=TracerJSONEncoder, indent=2)
                 
             print(f"Trace saved to {filepath}")
-            # import pdb; pdb.set_trace()
             # Upload traces
             json_file_path = str(filepath)
             project_name = self.project_name
@@ -231,7 +230,6 @@ class BaseTracer:
         self.stop()
 
     def _change_span_ids_to_int(self, trace):
-        # import pdb; pdb.set_trace()
         id, parent_id = 1, 0
         for span in trace.data[0]["spans"]:
             span.id = id
@@ -247,7 +245,6 @@ class BaseTracer:
     def _change_agent_intput_output(self, trace):
         for span in trace.data[0]["spans"]:
             if span.type == "agent":
-                # import pdb; pdb.set_trace()
                 childrens = span.data["children"]
                 if childrens != []:
                     span.data["input"] = childrens[0]["data"]["input"]
