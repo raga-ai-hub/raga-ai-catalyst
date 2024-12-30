@@ -231,8 +231,21 @@ class Trace:
         self.data = data or []
         self.replays = replays
         self.components = []
+        self.interactions = []
 
-    def add_interaction(self, type: str, content: str):
+    def add_interaction(self, interaction_type, content):
+        """Add a user interaction to the trace"""
+        self.interactions.append({
+            "interaction_type": interaction_type,
+            "content": content,
+            "timestamp": datetime.now().isoformat()
+        })
+
+    def get_interactions(self):
+        """Get all user interactions"""
+        return self.interactions
+
+    def add_component_interaction(self, type: str, content: str):
         """Add an interaction to the current component's span"""
         if not self.components:
             return
@@ -254,5 +267,6 @@ class Trace:
             "metadata": self.metadata.to_dict() if self.metadata else None,
             "data": self.data,
             "replays": self.replays,
-            "components": [component.to_dict() for component in self.components]
+            "components": [component.to_dict() for component in self.components],
+            "interactions": self.interactions
         }

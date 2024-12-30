@@ -496,10 +496,8 @@ class LLMTracerMixin:
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
-            print(f"Duplicate LLM call detected with hash: {hash_id}")
             return await original_func(*args, **kwargs)
 
-        print(f"New LLM call with hash: {hash_id}")
         self.seen_hash_ids.add(hash_id)
 
         # Start tracking network calls for this component
@@ -630,12 +628,10 @@ class LLMTracerMixin:
         
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
-            print(f"Duplicate LLM call detected with hash: {hash_id}")
             if asyncio.iscoroutinefunction(original_func):
                 return asyncio.run(original_func(*args, **kwargs))
             return original_func(*args, **kwargs)
-        
-        print(f"New LLM call with hash: {hash_id}")
+    
         self.seen_hash_ids.add(hash_id)
 
         start_time = datetime.utcnow().isoformat()
@@ -678,39 +674,28 @@ class LLMTracerMixin:
             memory_after = psutil.Process().memory_info().rss
             memory_used = memory_after - memory_before
             
+            token_usage = self._extract_token_usage_sync(result)
+            model_name = self._extract_model_name(kwargs)
+            cost = self._calculate_cost(token_usage, model_name)
+            
             component_data.update({
+                "token_usage": token_usage,
+                "cost": cost,
                 "end_time": end_time,
-                "info": {
-                    "llm_type": "default",
-                    "version": "1.0.0",
-                    "memory_used": memory_used,
-                    "cost": {
-                        "input_cost": 0.0,
-                        "output_cost": 0.0,
-                        "total_cost": 0.0
-                    },
-                    "tokens": {
-                        "prompt_tokens": 0,
-                        "completion_tokens": 0,
-                        "total_tokens": 0
-                    }
-                },
-                "data": {
-                    "input": kwargs,
-                    "output": extract_llm_output(result),
-                    "memory_used": memory_used
+                "metadata": {
+                    "model": model_name,
+                    "temperature": kwargs.get("temperature", 0.7),
+                    "max_tokens": kwargs.get("max_tokens", 512),
+                    "top_p": kwargs.get("top_p", 1.0),
+                    "frequency_penalty": kwargs.get("frequency_penalty", 0.0),
+                    "presence_penalty": kwargs.get("presence_penalty", 0.0),
+                    "stop": kwargs.get("stop", None),
                 }
             })
             
-            # Add print and input interactions
+            # Add user interactions if they exist
             if hasattr(self, "trace") and self.trace is not None:
-                component_data["print_interactions"] = [
-                    {"interaction_type": "output", "content": "llm_call", "timestamp": start_time},
-                    {"interaction_type": "output", "content": "Press Enter to continue...", "timestamp": start_time}
-                ]
-                component_data["input_interactions"] = [
-                    {"interaction_type": "input", "content": "", "timestamp": end_time}
-                ]
+                component_data["user_interactions"] = self.trace.get_interactions()
             
             return result
         except Exception as e:
@@ -830,10 +815,8 @@ class LLMTracerMixin:
                 
                 # Check if we've already traced this call
                 if hash_id in self.seen_hash_ids:
-                    print(f"Duplicate LLM call detected with hash: {hash_id}")
                     return func(*args, **kwargs)
                 
-                print(f"New LLM call with hash: {hash_id}")
                 self.seen_hash_ids.add(hash_id)
                 
                 # Generate a unique ID for this LLM call
