@@ -4,26 +4,30 @@ from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
 from .unique_decorator import mydecorator
+from .unique_decorator import generate_unique_hash
 
 import contextvars
 import asyncio
+from .file_name_tracker import TrackName
+
 
 class AgentTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.current_agent_id = contextvars.ContextVar("agent_id", default=None)
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
-        self._trace_sync_agent_execution = mydecorator(self._trace_sync_agent_execution)
-        self._trace_agent_execution = mydecorator(self._trace_agent_execution)
 
 
     def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
+# <<<<<<< HEAD
         def decorator(target):
             # Check if target is a class
             is_class = isinstance(target, type)
             tracer = self  # Store reference to tracer instance
+            top_level_hash_id = generate_unique_hash(target, name, agent_type, version, capabilities)
             
             if is_class:
                 # Store original __init__
@@ -84,6 +88,7 @@ class AgentTracerMixin:
                         attr_value = getattr(target, attr_name)
                         if callable(attr_value):
                             def wrap_method(method):
+                                @self.file_tracker.trace_decorator
                                 @functools.wraps(method)
                                 def wrapped_method(self, *args, **kwargs):
                                     # Set this agent as current during method execution
@@ -136,16 +141,41 @@ class AgentTracerMixin:
                 is_async = asyncio.iscoroutinefunction(target)
                 if is_async:
                     async def wrapper(*args, **kwargs):
-                        return await self._trace_agent_execution(target, name, agent_type, version, capabilities, *args, **kwargs)
+                        return await self._trace_agent_execution(target, name, agent_type, version, capabilities, top_level_hash_id, *args, **kwargs)
                     return wrapper
                 else:
                     def wrapper(*args, **kwargs):
-                        return self._trace_sync_agent_execution(target, name, agent_type, version, capabilities, *args, **kwargs)
+                        return self._trace_sync_agent_execution(target, name, agent_type, version, capabilities, top_level_hash_id, *args, **kwargs)
                     return wrapper
 
         return decorator
+# =======
+#         def decorator(func):
+#             # Check if the function is async
+#             decorated_func = mydecorator(func)
+ 
+#             is_async = asyncio.iscoroutinefunction(func)
 
-    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+#             @self.file_tracker.trace_decorator
+#             @functools.wraps(func)
+#             async def async_wrapper(*args, **kwargs):
+#                 return await self._trace_agent_execution(
+#                     func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
+#                 )
+
+#             @self.file_tracker.trace_decorator
+#             @functools.wraps(func)
+#             def sync_wrapper(*args, **kwargs):
+#                 return self._trace_sync_agent_execution(
+#                     func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
+#                 )
+
+#             return async_wrapper if is_async else sync_wrapper
+# >>>>>>> 5bbac83ee3c67b5d016f67303964613a28dcf53f
+
+#         return decorator
+
+    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
         """Synchronous version of agent tracing"""
         if not self.is_active:
             return func(*args, **kwargs)
@@ -153,7 +183,6 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_sync_agent_execution.hash_id
 
         # Get parent agent ID if exists
         parent_agent_id = self.current_agent_id.get()
@@ -220,7 +249,7 @@ class AgentTracerMixin:
             self.current_agent_name.reset(agent_name_token)
             self.agent_children.reset(children_token)
 
-    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
         """Asynchronous version of agent tracing"""
         if not self.is_active:
             return await func(*args, **kwargs)
@@ -228,7 +257,6 @@ class AgentTracerMixin:
         start_time = datetime.now()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_agent_execution.hash_id
 
         # Initialize empty children list for this agent
         parent_children = self.agent_children.get()

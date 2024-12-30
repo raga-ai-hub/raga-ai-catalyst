@@ -12,14 +12,17 @@ import sys
 import gc
 import traceback
 
-from .unique_decorator import mydecorator
+from .unique_decorator import generate_unique_hash  # Import the hash generation function directly
 from .utils.trace_utils import calculate_cost, load_model_costs
 from .utils.llm_utils import extract_llm_output
+from .file_name_tracker import TrackName
+
 
 
 class LLMTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.patches = []
         try:
             self.model_costs = load_model_costs()
@@ -39,7 +42,7 @@ class LLMTracerMixin:
         # Track seen hash IDs to prevent duplicate traces
         self.seen_hash_ids = set()
         # Apply decorator to trace_llm_call method
-        self.trace_llm_call = mydecorator(self.trace_llm_call)
+        # self.trace_llm_call = mydecorator(self.trace_llm_call)
 
     def instrument_llm_calls(self):
         # Handle modules that are already imported
@@ -487,12 +490,22 @@ class LLMTracerMixin:
     async def trace_llm_call(self, original_func, *args, **kwargs):
         """Trace an LLM API call"""
         if not self.is_active:
+# <<<<<<< HEAD
             return await original_func(*args, **kwargs)
 
+        # start_time = datetime.now().astimezone()
+        # start_memory = psutil.Process().memory_info().rss
+        # component_id = str(uuid.uuid4())
+        # hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{original_func.__name__}_{str(args)}_{str(kwargs)}"))  # Generate a new hash_id
+# =======
+            # return original_func(*args, **kwargs)
+                
+        # Use datetime with timezone info
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{original_func.__name__}_{str(args)}_{str(kwargs)}"))  # Generate a new hash_id
+        hash_id = generate_unique_hash(original_func, *args, **kwargs)  # Get hash_id from decorator
+# >>>>>>> 5bbac83ee3c67b5d016f67303964613a28dcf53f
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -566,6 +579,7 @@ class LLMTracerMixin:
                 error=error_component
             )
 
+# <<<<<<< HEAD
             self.add_component(llm_component)
             raise
 
@@ -577,6 +591,37 @@ class LLMTracerMixin:
             loop = asyncio.get_event_loop()
             # Run the coroutine in the current event loop
             result = loop.run_until_complete(result)
+# =======
+#     def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
+#         def decorator(func_or_class):
+#             if isinstance(func_or_class, type):
+#                 for attr_name, attr_value in func_or_class.__dict__.items():
+#                     if callable(attr_value) and not attr_name.startswith("__"):
+#                         setattr(
+#                             func_or_class,
+#                             attr_name,
+#                             self.trace_llm(f"{name}.{attr_name}", tool_type, version)(attr_value),
+#                         )
+#                 return func_or_class
+#             else:
+#                 @self.file_tracker.trace_decorator
+#                 @functools.wraps(func_or_class)
+#                 async def async_wrapper(*args, **kwargs):
+#                     token = self.current_llm_call_name.set(name)
+#                     try:
+#                         return await func_or_class(*args, **kwargs)
+#                     finally:
+#                         self.current_llm_call_name.reset(token)
+
+#                 @self.file_tracker.trace_decorator
+#                 @functools.wraps(func_or_class)
+#                 def sync_wrapper(*args, **kwargs):
+#                     token = self.current_llm_call_name.set(name)
+#                     try:
+#                         return func_or_class(*args, **kwargs)
+#                     finally:
+#                         self.current_llm_call_name.reset(token)
+# >>>>>>> 5bbac83ee3c67b5d016f67303964613a28dcf53f
 
         # Handle standard OpenAI/Anthropic format
         if hasattr(result, "usage"):
@@ -623,8 +668,8 @@ class LLMTracerMixin:
             return original_func(*args, **kwargs)
 
         # Generate hash ID based on function name and arguments
-        hash_input = f"{original_func.__name__}_{str(args)}_{str(kwargs)}"
-        hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, hash_input))
+        # hash_input = f"{original_func.__name__}_{str(args)}_{str(kwargs)}"
+        hash_id = generate_unique_hash(original_func, *args, **kwargs)
         
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -802,16 +847,48 @@ class LLMTracerMixin:
             "total_tokens": 0
         }
 
+
+    #     def trace_llm(self, name: str, tool_type: str = "llm", version: str = "1.0.0"):
+#         def decorator(func_or_class):
+#             if isinstance(func_or_class, type):
+#                 for attr_name, attr_value in func_or_class.__dict__.items():
+#                     if callable(attr_value) and not attr_name.startswith("__"):
+#                         setattr(
+#                             func_or_class,
+#                             attr_name,
+#                             self.trace_llm(f"{name}.{attr_name}", tool_type, version)(attr_value),
+#                         )
+#                 return func_or_class
+#             else:
+#                 @self.file_tracker.trace_decorator
+#                 @functools.wraps(func_or_class)
+#                 async def async_wrapper(*args, **kwargs):
+#                     token = self.current_llm_call_name.set(name)
+#                     try:
+#                         return await func_or_class(*args, **kwargs)
+#                     finally:
+#                         self.current_llm_call_name.reset(token)
+
+#                 @self.file_tracker.trace_decorator
+#                 @functools.wraps(func_or_class)
+#                 def sync_wrapper(*args, **kwargs):
+#                     token = self.current_llm_call_name.set(name)
+#                     try:
+#                         return func_or_class(*args, **kwargs)
+#                     finally:
+#                         self.current_llm_call_name.reset(token)
+
     def trace_llm(self, name: str = None):
         def decorator(func):
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 if not self.is_active:
                     return func(*args, **kwargs)
                 
                 # Generate hash ID based on function name, args, and kwargs
-                hash_input = f"{name or func.__name__}_{str(args)}_{str(kwargs)}"
-                hash_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, hash_input))
+                # hash_input = f"{name or func.__name__}_{str(args)}_{str(kwargs)}"
+                hash_id = generate_unique_hash(func, *args, **kwargs)
                 
                 # Check if we've already traced this call
                 if hash_id in self.seen_hash_ids:

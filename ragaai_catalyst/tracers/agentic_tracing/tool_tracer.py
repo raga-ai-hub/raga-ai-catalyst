@@ -3,18 +3,19 @@ import uuid
 from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
-from .unique_decorator import mydecorator
+from .unique_decorator import generate_unique_hash  # Import the hash generation function directly
 import contextvars
 import asyncio
+from .file_name_tracker import TrackName
+
 
 class ToolTracerMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.file_tracker = TrackName()
         self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
-        self._trace_sync_tool_execution = mydecorator(self._trace_sync_tool_execution)
-        self._trace_tool_execution = mydecorator(self._trace_tool_execution)
 
 
     def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
@@ -22,12 +23,14 @@ class ToolTracerMixin:
             # Check if the function is async
             is_async = asyncio.iscoroutinefunction(func)
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await self._trace_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
 
+            @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return self._trace_sync_tool_execution(
@@ -46,7 +49,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_sync_tool_execution.hash_id
+        hash_id = generate_unique_hash(func, *args, **kwargs)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -118,7 +121,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = self._trace_tool_execution.hash_id
+        hash_id = generate_unique_hash(func, *args, **kwargs)
 
         try:
             # Execute the tool
