@@ -329,7 +329,7 @@ class Evaluation:
         metric_schema_mapping = self._update_base_json(metrics)
         try:
             response = requests.post(
-                f'{self.base_url}/playground/metric-evaluation', 
+                f'{self.base_url}/v2/llm/metric-evaluation',
                 headers=headers, 
                 json=metric_schema_mapping,
                 timeout=self.timeout
