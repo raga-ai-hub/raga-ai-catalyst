@@ -28,13 +28,14 @@ class UserInteractionTracer:
         except EOFError:
             content = ""  # Return empty string on EOF
         if hasattr(self.tracer, "trace") and self.tracer.trace is not None:
-            self.tracer.trace.add_interaction("input", content)
+            self.tracer.trace.add_interaction("user_input", content)
+            
         return content
 
     def traced_print(self, *args, **kwargs):
         content = " ".join(str(arg) for arg in args)
         if hasattr(self.tracer, "trace") and self.tracer.trace is not None:
-            self.tracer.trace.add_interaction("output", content)
+            self.tracer.trace.add_interaction("print", content)
         return self.original_print(*args, **kwargs)
 
     def _log_interaction(self, interaction_type, content):

@@ -235,28 +235,17 @@ class Trace:
 
     def add_interaction(self, interaction_type, content):
         """Add a user interaction to the trace"""
-        self.interactions.append({
-            "interaction_type": interaction_type,
-            "content": content,
-            "timestamp": datetime.now().isoformat()
-        })
+        if interaction_type in ["user_input", "print"]:
+            interaction_type = "input" if interaction_type == "user_input" else "output"
+            self.interactions.append({
+                "interaction_type": interaction_type,
+                "content": content,
+                "timestamp": datetime.now().isoformat()
+            })
 
     def get_interactions(self):
         """Get all user interactions"""
         return self.interactions
-
-    def add_component_interaction(self, type: str, content: str):
-        """Add an interaction to the current component's span"""
-        if not self.components:
-            return
-
-        current_component = self.components[-1]
-        interaction = Interaction(
-            type=type,
-            content=content,
-            timestamp=datetime.utcnow().isoformat()
-        )
-        current_component.interactions.append(interaction)
 
     def to_dict(self):
         return {

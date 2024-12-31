@@ -158,20 +158,27 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
     def add_component(self, component_data: dict):
         """Add a component to the trace data"""
         component_id = component_data["id"]
-        
         # Convert dict to appropriate Component type
+        filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
+        if hasattr(component_data, 'interactions'):
+            for interaction in component_data["interactions"]:
+                if interaction["interaction_type"] == "user_input":
+                    filtered_data["interactions"].append({
+                        "interaction_type": "input",
+                        "content": interaction["content"],
+                        "timestamp": interaction["timestamp"]
+                    })
+                elif interaction["interaction_type"] == "print":
+                    filtered_data["interactions"].append({
+                        "interaction_type": "output",
+                        "content": interaction["content"],
+                        "timestamp": interaction["timestamp"]
+                    })
         if component_data["type"] == "llm":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # Add user interaction for LLM calls
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = LLMComponent(**filtered_data)
         elif component_data["type"] == "agent":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = AgentComponent(**filtered_data)
         elif component_data["type"] == "tool":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = ToolComponent(**filtered_data)
         else:
             component = Component(**component_data)
@@ -186,25 +193,6 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         else:
             # Add component to the main trace
             super().add_component(component)
-
-    def add_interaction(self, interaction_type: str, content: str):
-        """Add an interaction (print or input) to the current span"""
-        # if interaction_type not in ["print", "input"]:
-        #     raise ValueError("interaction_type must be either 'print' or 'input'")
-            
-        current_span = self.get_current_span()
-        if current_span is None:
-            return
-            
-        interaction = Interaction(
-            type=interaction_type,
-            content=content,
-            timestamp=datetime.utcnow().isoformat()
-        )
-        
-        if not hasattr(current_span, "interactions"):
-            current_span.interactions = []
-        current_span.interactions.append(interaction)
 
     def __enter__(self):
         """Context manager entry"""

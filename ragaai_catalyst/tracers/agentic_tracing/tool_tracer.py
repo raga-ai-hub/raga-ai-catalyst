@@ -20,12 +20,21 @@ class ToolTracerMixin:
 
     def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
         def decorator(func):
+            # Add metadata attribute to the function
+            metadata = {
+                "name": name,
+                "tool_type": tool_type,
+                "version": version,
+                "is_active": True
+            }
+            
             # Check if the function is async
             is_async = asyncio.iscoroutinefunction(func)
 
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
+                async_wrapper.metadata = metadata
                 return await self._trace_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
@@ -33,11 +42,14 @@ class ToolTracerMixin:
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
+                sync_wrapper.metadata = metadata
                 return self._trace_sync_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
 
-            return async_wrapper if is_async else sync_wrapper
+            wrapper = async_wrapper if is_async else sync_wrapper
+            wrapper.metadata = metadata
+            return wrapper
 
         return decorator
 
@@ -195,22 +207,11 @@ class ToolTracerMixin:
                 "memory_used": kwargs["memory_used"]
             },
             "data": {
-                "input": kwargs["input_data"]["args"],
+                "input": kwargs["input_data"],
                 "output": kwargs["output_data"],
                 "memory_used": kwargs["memory_used"]
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
-            "interactions": [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "timestamp": start_time.isoformat(),
-                "content": kwargs["input_data"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "timestamp": kwargs["end_time"].isoformat(),
-                "content": kwargs["output_data"]
-            }]
         }
 
         return component

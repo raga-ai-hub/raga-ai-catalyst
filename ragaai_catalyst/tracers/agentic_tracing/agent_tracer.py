@@ -22,7 +22,6 @@ class AgentTracerMixin:
 
 
     def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
-# <<<<<<< HEAD
         def decorator(target):
             # Check if target is a class
             is_class = isinstance(target, type)
@@ -36,7 +35,7 @@ class AgentTracerMixin:
                 def wrapped_init(self, *args, **kwargs):
                     # Set agent context before initializing
                     component_id = str(uuid.uuid4())
-                    hash_id = tracer._trace_sync_agent_execution.hash_id if hasattr(tracer, '_trace_sync_agent_execution') else str(uuid.uuid4())
+                    hash_id = str(uuid.uuid4())
                     
                     # Store the component ID in the instance
                     self._agent_component_id = component_id
@@ -108,10 +107,7 @@ class AgentTracerMixin:
                                             component = tracer._agent_components.get(self._agent_component_id)
                                             if component:
                                                 component['data']['output'] = tracer._sanitize_output(result)
-                                                component['data']['input'] = {
-                                                    'args': tracer._sanitize_input(args, kwargs),
-                                                    'kwargs': {}
-                                                }
+                                                component['data']['input'] = tracer._sanitize_input(args, kwargs)
                                                 component['start_time'] = start_time.isoformat()
                                                 component['end_time'] = end_time.isoformat()
                                                 
@@ -145,37 +141,15 @@ class AgentTracerMixin:
                     return wrapper
                 else:
                     def wrapper(*args, **kwargs):
-                        return self._trace_sync_agent_execution(target, name, agent_type, version, capabilities, top_level_hash_id, *args, **kwargs)
+                        return self._trace_sync_agent_execution(target, name, agent_type, version, capabilities, *args, **kwargs)
                     return wrapper
 
         return decorator
-# =======
-#         def decorator(func):
-#             # Check if the function is async
-#             decorated_func = mydecorator(func)
- 
-#             is_async = asyncio.iscoroutinefunction(func)
 
-#             @self.file_tracker.trace_decorator
-#             @functools.wraps(func)
-#             async def async_wrapper(*args, **kwargs):
-#                 return await self._trace_agent_execution(
-#                     func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
-#                 )
+    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities, *args, **kwargs):
+        # Generate a unique hash_id for this execution context
+        hash_id = str(uuid.uuid4())
 
-#             @self.file_tracker.trace_decorator
-#             @functools.wraps(func)
-#             def sync_wrapper(*args, **kwargs):
-#                 return self._trace_sync_agent_execution(
-#                     func, name, agent_type, version, capabilities,decorated_func.hash_id, *args, **kwargs
-#                 )
-
-#             return async_wrapper if is_async else sync_wrapper
-# >>>>>>> 5bbac83ee3c67b5d016f67303964613a28dcf53f
-
-#         return decorator
-
-    def _trace_sync_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
         """Synchronous version of agent tracing"""
         if not self.is_active:
             return func(*args, **kwargs)
@@ -396,18 +370,7 @@ class AgentTracerMixin:
                 "output": kwargs["output_data"],
                 "children": kwargs.get("children", [])
             },
-            "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
-            "interactions": [{
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "input",
-                "timestamp": start_time.isoformat(),
-                "content": kwargs["input_data"]
-            }, {
-                "id": f"int_{uuid.uuid4()}",
-                "interaction_type": "output",
-                "timestamp": kwargs["end_time"].isoformat(),
-                "content": kwargs["output_data"]
-            }]
+            "network_calls": self.component_network_calls.get(kwargs["component_id"], [])
         }
 
         return component
@@ -426,15 +389,26 @@ class AgentTracerMixin:
             component_network_calls[component_id] = []
         self.component_network_calls.set(component_network_calls)
 
-    def _sanitize_input(self, args: tuple, kwargs: dict) -> Dict:
-        """Sanitize and format input data"""
-        return {
-            "args": [str(arg) if not isinstance(arg, (int, float, bool, str, list, dict)) else arg for arg in args],
-            "kwargs": {
-                k: str(v) if not isinstance(v, (int, float, bool, str, list, dict)) else v 
-                for k, v in kwargs.items()
-            }
-        }
+    def _sanitize_input(self, args: tuple, kwargs: dict) -> str:
+        """Convert input arguments to text format.
+        
+        Args:
+            args: Input arguments tuple
+            kwargs: Input keyword arguments dict
+            
+        Returns:
+            str: Text representation of the input arguments
+        """
+        def _sanitize_value(value):
+            if isinstance(value, dict):
+                return str({k: _sanitize_value(v) for k, v in value.items()})
+            elif isinstance(value, (list, tuple)):
+                return str([_sanitize_value(item) for item in value])
+            return str(value)
+        
+        sanitized_args = [_sanitize_value(arg) for arg in args]
+        sanitized_kwargs = {k: _sanitize_value(v) for k, v in kwargs.items()}
+        return str({"args": sanitized_args, "kwargs": sanitized_kwargs})
 
     def _sanitize_output(self, output: Any) -> Any:
         """Sanitize and format output data"""

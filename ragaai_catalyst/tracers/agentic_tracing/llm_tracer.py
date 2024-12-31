@@ -449,25 +449,11 @@ class LLMTracerMixin:
                 "tokens": usage
             },
             "data": {
-                "input": input_data,
+                "input": input_data['args'] if hasattr(input_data, 'args') else input_data,
                 "output": output_data.output_response if output_data else None,
                 "memory_used": memory_used
             },
             "network_calls": self.component_network_calls.get(component_id, []),
-            "interactions": [
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "input",
-                    "timestamp": start_time.isoformat(),
-                    "content": input_data
-                },
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "output",
-                    "timestamp": end_time.isoformat(),
-                    "content": output_data.output_response if output_data else None
-                }
-            ]
         }
 
         return component
@@ -607,9 +593,6 @@ class LLMTracerMixin:
             model_name = self._extract_model_name(kwargs)
             cost = self._calculate_cost(token_usage, model_name)
 
-            # import pdb
-            # pdb.set_trace()
-
             # End tracking network calls for this component
             self.end_component(component_id)
 
@@ -709,7 +692,6 @@ class LLMTracerMixin:
                     raise
                 finally:
                     end_time = datetime.now()
-                    
                     # Create LLM component
                     llm_component = {
                         "id": component_id,
@@ -740,36 +722,11 @@ class LLMTracerMixin:
                             "children": []
                         },
                         "network_calls": self.component_network_calls.get(component_id, []),
-                        "interactions": [
-                            {
-                                "id": f"int_{uuid.uuid4()}",
-                                "interaction_type": "input",
-                                "timestamp": start_time.isoformat(),
-                                "content": self._sanitize_input(args, kwargs)
-                            }
-                        ]
                     }
-                    
+
                     # Add user interactions if they exist
                     if hasattr(self, "trace") and self.trace is not None:
                         llm_component["interactions"] = self.trace.get_interactions()
-                    
-                    # Only add output interaction if there was no error
-                    if not error_info:
-                        llm_component["interactions"].append({
-                            "id": f"int_{uuid.uuid4()}",
-                            "interaction_type": "output",
-                            "timestamp": end_time.isoformat(),
-                            "content": self._sanitize_output(result)
-                        })
-                    else:
-                        # Add error interaction
-                        llm_component["interactions"].append({
-                            "id": f"int_{uuid.uuid4()}",
-                            "interaction_type": "error",
-                            "timestamp": end_time.isoformat(),
-                            "content": error_info["error"]
-                        })
                     
                     # If this is part of an agent, add to agent's children
                     if parent_agent_id:
@@ -809,6 +766,21 @@ class LLMTracerMixin:
         elif isinstance(data, tuple):
             return tuple(self._sanitize_api_keys(item) for item in data)
         return data
+
+    def _sanitize_input(self, args, kwargs):
+        """Convert input arguments to text format.
+        
+        Args:
+            args: Input arguments that may contain nested dictionaries
+            
+        Returns:
+            str: Text representation of the input arguments
+        """
+        if isinstance(args, dict):
+            return str({k: self._sanitize_input(v, {}) for k, v in args.items()})
+        elif isinstance(args, (list, tuple)):
+            return str([self._sanitize_input(item, {}) for item in args])
+        return str(args)
 
 def extract_llm_output(result):
     """Extract output from LLM response"""
