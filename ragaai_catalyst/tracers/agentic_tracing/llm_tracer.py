@@ -427,8 +427,6 @@ class LLMTracerMixin:
 
 
     def create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, cost={}, usage={}, error=None):
-        import pdb
-        pdb.set_trace()
         # Update total metrics
         self.total_tokens += usage["total_tokens"]
         self.total_cost += cost["total_cost"]
