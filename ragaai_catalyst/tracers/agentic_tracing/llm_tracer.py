@@ -613,11 +613,15 @@ class LLMTracerMixin:
             # End tracking network calls for this component
             self.end_component(component_id)
 
+            name = self.current_llm_call_name.get()
+            if name is None:
+                name = original_func.__name__
+
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
                 hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
+                name=name,
                 llm_type=model_name,
                 version="1.0.0",
                 memory_used=memory_used,
