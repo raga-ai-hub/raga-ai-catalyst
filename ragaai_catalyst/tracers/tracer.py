@@ -67,8 +67,8 @@ class Tracer(AgenticTracing):
         self.dataset_name = dataset_name
         self.tracer_type = tracer_type
         self.metadata = self._improve_metadata(metadata, tracer_type)
-        self.metadata["total_cost"] = 0.0
-        self.metadata["total_tokens"] = 0
+        # self.metadata["total_cost"] = 0.0
+        # self.metadata["total_tokens"] = 0
         self.pipeline = pipeline
         self.description = description
         self.upload_timeout = upload_timeout

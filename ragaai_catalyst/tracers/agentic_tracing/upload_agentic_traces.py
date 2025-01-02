@@ -178,4 +178,4 @@ class UploadAgenticTraces:
             return
         self._put_presigned_url(presignedUrl, self.json_file_path)
         self.insert_traces(presignedUrl)
-        print("Agentic Traces uplaoded")
+        print("Agentic Traces uploaded")

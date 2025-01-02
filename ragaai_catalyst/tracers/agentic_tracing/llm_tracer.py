@@ -454,25 +454,11 @@ class LLMTracerMixin:
                 "tokens": usage
             },
             "data": {
-                "input": input_data,
+                "input": input_data['args'] if hasattr(input_data, 'args') else input_data,
                 "output": output_data.output_response if output_data else None,
                 "memory_used": memory_used
             },
             "network_calls": self.component_network_calls.get(component_id, []),
-            "interactions": [
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "input",
-                    "timestamp": start_time.isoformat(),
-                    "content": input_data
-                },
-                {
-                    "id": f"int_{uuid.uuid4()}",
-                    "interaction_type": "output",
-                    "timestamp": end_time.isoformat(),
-                    "content": output_data.output_response if output_data else None
-                }
-            ]
         }
 
         return component
@@ -522,7 +508,7 @@ class LLMTracerMixin:
 
             # End tracking network calls for this component
             self.end_component(component_id)
-
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -538,7 +524,9 @@ class LLMTracerMixin:
                 cost=cost,
                 usage=token_usage
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             return result
 
@@ -569,6 +557,9 @@ class LLMTracerMixin:
                 error=error_component
             )
 
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             raise
 
@@ -612,9 +603,6 @@ class LLMTracerMixin:
             model_name = self._extract_model_name(kwargs)
             cost = self._calculate_cost(token_usage, model_name)
 
-            # import pdb
-            # pdb.set_trace()
-
             # End tracking network calls for this component
             self.end_component(component_id)
 
@@ -637,7 +625,9 @@ class LLMTracerMixin:
                 cost=cost,
                 usage=token_usage
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             return result
 
@@ -667,7 +657,9 @@ class LLMTracerMixin:
                 output_data=None,
                 error=error_component
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             raise
 
@@ -718,7 +710,6 @@ class LLMTracerMixin:
                     raise
                 finally:
                     end_time = datetime.now()
-                    
                     # Create LLM component
                     llm_component = {
                         "id": component_id,
@@ -749,36 +740,11 @@ class LLMTracerMixin:
                             "children": []
                         },
                         "network_calls": self.component_network_calls.get(component_id, []),
-                        "interactions": [
-                            {
-                                "id": f"int_{uuid.uuid4()}",
-                                "interaction_type": "input",
-                                "timestamp": start_time.isoformat(),
-                                "content": self._sanitize_input(args, kwargs)
-                            }
-                        ]
                     }
-                    
+
                     # Add user interactions if they exist
                     if hasattr(self, "trace") and self.trace is not None:
-                        llm_component["interactions"] = self.trace.get_interactions()
-                    
-                    # Only add output interaction if there was no error
-                    if not error_info:
-                        llm_component["interactions"].append({
-                            "id": f"int_{uuid.uuid4()}",
-                            "interaction_type": "output",
-                            "timestamp": end_time.isoformat(),
-                            "content": self._sanitize_output(result)
-                        })
-                    else:
-                        # Add error interaction
-                        llm_component["interactions"].append({
-                            "id": f"int_{uuid.uuid4()}",
-                            "interaction_type": "error",
-                            "timestamp": end_time.isoformat(),
-                            "content": error_info["error"]
-                        })
+                        llm_component["interactions"] = self.trace.get_interactions(name)
                     
                     # If this is part of an agent, add to agent's children
                     if parent_agent_id:
@@ -819,3 +785,73 @@ class LLMTracerMixin:
             return tuple(self._sanitize_api_keys(item) for item in data)
         return data
 
+    def _sanitize_input(self, args, kwargs):
+        """Convert input arguments to text format.
+        
+        Args:
+            args: Input arguments that may contain nested dictionaries
+            
+        Returns:
+            str: Text representation of the input arguments
+        """
+        if isinstance(args, dict):
+            return str({k: self._sanitize_input(v, {}) for k, v in args.items()})
+        elif isinstance(args, (list, tuple)):
+            return str([self._sanitize_input(item, {}) for item in args])
+        return str(args)
+
+def extract_llm_output(result):
+    """Extract output from LLM response"""
+    class OutputResponse:
+        def __init__(self, output_response):
+            self.output_response = output_response
+
+    # Handle coroutines
+    if asyncio.iscoroutine(result):
+        # For sync context, run the coroutine
+        if not asyncio.get_event_loop().is_running():
+            result = asyncio.run(result)
+        else:
+            # We're in an async context, but this function is called synchronously
+            # Return a placeholder and let the caller handle the coroutine
+            return OutputResponse("Coroutine result pending")
+
+    # Handle Google GenerativeAI format
+    if hasattr(result, "result"):
+        candidates = getattr(result.result, "candidates", [])
+        output = []
+        for candidate in candidates:
+            content = getattr(candidate, "content", None)
+            if content and hasattr(content, "parts"):
+                for part in content.parts:
+                    if hasattr(part, "text"):
+                        output.append({
+                            "content": part.text,
+                            "role": getattr(content, "role", "assistant"),
+                            "finish_reason": getattr(candidate, "finish_reason", None)
+                        })
+        return OutputResponse(output)
+    
+    # Handle Vertex AI format
+    if hasattr(result, "text"):
+        return OutputResponse([{
+            "content": result.text,
+            "role": "assistant"
+        }])
+    
+    # Handle OpenAI format
+    if hasattr(result, "choices"):
+        return OutputResponse([{
+            "content": choice.message.content,
+            "role": choice.message.role
+        } for choice in result.choices])
+    
+    # Handle Anthropic format
+    if hasattr(result, "completion"):
+        return OutputResponse([{
+            "content": result.completion,
+            "role": "assistant"
+        }])
+    
+    # Default case
+    return OutputResponse(str(result))

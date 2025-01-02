@@ -29,10 +29,10 @@ from ..upload_traces import UploadTraces
 class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMixin):
     def __init__(self, user_detail, auto_instrument_llm: bool = True):
         # Initialize all parent classes
+        self.user_interaction_tracer = UserInteractionTracer()
         LLMTracerMixin.__init__(self)
         ToolTracerMixin.__init__(self)
         AgentTracerMixin.__init__(self)
-        self.user_interaction_tracer = UserInteractionTracer()
         
         self.project_name = user_detail["project_name"]
         self.project_id = user_detail["project_id"]
@@ -68,19 +68,19 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
 
     def start(self):
         """Start tracing"""
-        # Start base tracer (includes system info and resource monitoring)
-        super().start()
-        self.is_active = True
-        
-        # Activate network tracing
-        self.network_tracer.activate_patches()
-        
         # Setup user interaction tracing
         self.user_interaction_tracer.project_id.set(self.project_id)
         self.user_interaction_tracer.trace_id.set(self.trace_id)
         self.user_interaction_tracer.tracer = self
         builtins.print = self.user_interaction_tracer.traced_print
         builtins.input = self.user_interaction_tracer.traced_input
+        
+        # Start base tracer (includes system info and resource monitoring)
+        super().start()
+        self.is_active = True
+        
+        # Activate network tracing
+        self.network_tracer.activate_patches()
         
         # Instrument calls from mixins
         if self.auto_instrument_llm:
@@ -158,20 +158,16 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
     def add_component(self, component_data: dict):
         """Add a component to the trace data"""
         component_id = component_data["id"]
-        
         # Convert dict to appropriate Component type
+        filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
+        if 'interactions' in component_data.keys():
+            filtered_data["interactions"] = (component_data["interactions"])
+               
         if component_data["type"] == "llm":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # Add user interaction for LLM calls
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = LLMComponent(**filtered_data)
         elif component_data["type"] == "agent":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = AgentComponent(**filtered_data)
         elif component_data["type"] == "tool":
-            filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
-            # filtered_data["interactions"] = component_data.get("interactions", [])
             component = ToolComponent(**filtered_data)
         else:
             component = Component(**component_data)
@@ -186,25 +182,6 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         else:
             # Add component to the main trace
             super().add_component(component)
-
-    def add_interaction(self, interaction_type: str, content: str):
-        """Add an interaction (print or input) to the current span"""
-        # if interaction_type not in ["print", "input"]:
-        #     raise ValueError("interaction_type must be either 'print' or 'input'")
-            
-        current_span = self.get_current_span()
-        if current_span is None:
-            return
-            
-        interaction = Interaction(
-            type=interaction_type,
-            content=content,
-            timestamp=datetime.utcnow().isoformat()
-        )
-        
-        if not hasattr(current_span, "interactions"):
-            current_span.interactions = []
-        current_span.interactions.append(interaction)
 
     def __enter__(self):
         """Context manager entry"""

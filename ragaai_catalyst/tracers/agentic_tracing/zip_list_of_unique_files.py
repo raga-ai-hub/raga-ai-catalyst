@@ -312,7 +312,10 @@ class TraceDependencyTracker:
         hash_id = hashlib.sha256(combined_content).hexdigest()
 
         zip_filename = os.path.join(self.output_dir, f'{hash_id}.zip')
-        base_path = os.path.commonpath([os.path.abspath(p) for p in self.tracked_files if 'env' not in p])
+        common_path = [os.path.abspath(p) for p in self.tracked_files if 'env' not in p]
+
+        if common_path!=[]:
+            base_path = os.path.commonpath(common_path)
         with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for filepath in sorted(self.tracked_files):
                 if 'env' in filepath:

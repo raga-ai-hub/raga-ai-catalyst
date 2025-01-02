@@ -101,15 +101,15 @@ def _insert_code(dataset_name, hash_id, presigned_url, project_name):
         }
     
     try:
-        resposne = requests.request("POST", 
+        response = requests.request("POST", 
                                     f"{os.getenv('RAGAAI_CATALYST_BASE_URL')}/v2/llm/dataset/code", 
                                     headers=headers, 
                                     data=payload,
                                     timeout=99999)
-        if resposne.status_code == 200:
-            return resposne.json()["message"]
+        if response.status_code == 200:
+            return response.json()["message"]
         else:
-            raise Exception(f"Failed to insert code: {resposne.json()['message']}")
+            raise Exception(f"Failed to insert code: {response.json()['message']}")
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to insert code: {e}")
         raise

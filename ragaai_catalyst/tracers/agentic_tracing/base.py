@@ -248,6 +248,7 @@ class BaseTracer:
                 childrens = span.data["children"]
                 if childrens != []:
                     span.data["input"] = childrens[0]["data"]["input"]
+                    span.data["input"] = span.data["input"]['args'] if hasattr(span.data["input"], 'args') else span.data["input"]
                     span.data["output"] = childrens[-1]["data"]["output"]
         return trace
     

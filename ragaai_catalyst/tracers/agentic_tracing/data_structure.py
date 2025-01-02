@@ -194,7 +194,7 @@ class Component:
             "info": self.info,
             "data": self.data,
             "network_calls": [call.to_dict() if hasattr(call, 'to_dict') else call for call in self.network_calls],
-            "interactions": [interaction.to_dict() for interaction in self.interactions]
+            "interactions": self.interactions
         }
 
 class LLMComponent(Component):
@@ -235,28 +235,25 @@ class Trace:
 
     def add_interaction(self, interaction_type, content):
         """Add a user interaction to the trace"""
-        self.interactions.append({
-            "interaction_type": interaction_type,
-            "content": content,
-            "timestamp": datetime.now().isoformat()
-        })
+        if interaction_type in ["user_input", "print"]:
+            interaction_type = "input" if interaction_type == "user_input" else "output"
+            self.interactions.append({
+                "interaction_type": interaction_type,
+                "content": content,
+                "timestamp": datetime.now().isoformat()
+            })
 
-    def get_interactions(self):
+    def get_interactions(self, name):
         """Get all user interactions"""
-        return self.interactions
-
-    def add_component_interaction(self, type: str, content: str):
-        """Add an interaction to the current component's span"""
-        if not self.components:
-            return
-
-        current_component = self.components[-1]
-        interaction = Interaction(
-            type=type,
-            content=content,
-            timestamp=datetime.utcnow().isoformat()
-        )
-        current_component.interactions.append(interaction)
+        interactions = []
+        for interaction in self.interactions:
+            if interaction["content"]["caller"]["function"] == name:
+                interactions.append({
+                    "interaction_type": interaction["interaction_type"],
+                    "content": interaction["content"]["content"],
+                    "timestamp": interaction["timestamp"]
+                })
+        return interactions
 
     def to_dict(self):
         return {
