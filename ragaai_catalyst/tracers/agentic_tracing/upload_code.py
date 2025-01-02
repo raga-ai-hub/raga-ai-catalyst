@@ -73,8 +73,8 @@ def _put_zip_presigned_url(project_name, presignedUrl, filename):
             "Content-Type": "application/zip",
         }
 
-    # if "blob.core.windows.net" in presignedUrl:  # Azure
-    #     headers["x-ms-blob-type"] = "BlockBlob"
+    if "blob.core.windows.net" in presignedUrl:  # Azure
+        headers["x-ms-blob-type"] = "BlockBlob"
     print(f"Uploading code...")
     with open(filename, 'rb') as f:
         payload = f.read()
