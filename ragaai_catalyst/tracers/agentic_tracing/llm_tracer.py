@@ -12,11 +12,10 @@ import sys
 import gc
 import traceback
 
-from .unique_decorator import generate_unique_hash  # Import the hash generation function directly
+from .unique_decorator import generate_unique_hash   
 from .utils.trace_utils import load_model_costs
 from .utils.llm_utils import extract_llm_output
 from .file_name_tracker import TrackName
-
 
 
 class LLMTracerMixin:
@@ -27,11 +26,11 @@ class LLMTracerMixin:
         try:
             self.model_costs = load_model_costs()
         except Exception as e:
-            # If model costs can't be loaded, use default costs
             self.model_costs = {
+                # TODO: Default cost handling needs to be improved
                 "default": {
-                    "input_cost_per_token": 0.00002,
-                    "output_cost_per_token": 0.00002
+                    "input_cost_per_token": 0.0,
+                    "output_cost_per_token": 0.0
                 }
             }
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
@@ -39,6 +38,7 @@ class LLMTracerMixin:
         self.current_component_id = None  
         self.total_tokens = 0
         self.total_cost = 0.0
+        # TODO: Multiple spans can have the same hash id, so this needs to be fixed. The cause of the duplicate spans need to be fixed, not the filter it once recorded
         # Track seen hash IDs to prevent duplicate traces
         self.seen_hash_ids = set()
         # Apply decorator to trace_llm_call method
@@ -260,6 +260,7 @@ class LLMTracerMixin:
                 elif hasattr(instance, "model"):
                     model = instance.model
         
+        # TODO: This way isn't scalable. The necessity for normalising model names needs to be fixed. We shouldn't have to do this
         # Normalize Google model names
         if model and isinstance(model, str):
             model = model.lower()
@@ -273,6 +274,7 @@ class LLMTracerMixin:
         return model or "default"
 
     def _extract_parameters(self, kwargs, result=None):
+        # TODO: Why are we extracting these specific parameters? We should be able to handle all the parameters for all different models, shoudln't hardcode any model specific parameters
         """Extract parameters from kwargs or result"""
         params = {
             "temperature": kwargs.get("temperature", getattr(result, "temperature", 0.7)),
@@ -327,12 +329,13 @@ class LLMTracerMixin:
                 # Try to get from raw response
                 total_tokens = getattr(result._raw_response, "token_count", 0)
             return {
+                # TODO: This implementation is incorrect. Vertex AI does provide this breakdown    
                 "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
                 "completion_tokens": total_tokens,
                 "total_tokens": total_tokens
             }
         
-        return {
+        return {    # TODO: Passing 0 in case of not recorded is not correct. This needs to be fixes. Discuss before making changes to this
             "prompt_tokens": 0,
             "completion_tokens": 0,
             "total_tokens": 0
@@ -340,8 +343,8 @@ class LLMTracerMixin:
 
 
     def _extract_input_data(self, kwargs, result):
+        # TODO: Pass all the parameters, do not hardcode anything
         """Extract input data from kwargs and result"""
-
         # For Vertex AI GenerationResponse
         if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
             # Extract generation config
@@ -401,6 +404,7 @@ class LLMTracerMixin:
         return {}
 
     def _calculate_cost(self, token_usage, model_name):
+        # TODO: Passing default cost is a faulty logic & implementation and should be fixed
         """Calculate cost based on token usage and model"""
         if not isinstance(token_usage, dict):
             token_usage = {
@@ -419,6 +423,7 @@ class LLMTracerMixin:
         output_cost = (token_usage.get("completion_tokens", 0)) * model_cost.get("output_cost_per_token", 0.0005)
         total_cost = input_cost + output_cost
 
+        # TODO: Return the value as it is, no need to round
         return {
             "input_cost": round(input_cost, 10),
             "output_cost": round(output_cost, 10),
@@ -601,11 +606,15 @@ class LLMTracerMixin:
             # End tracking network calls for this component
             self.end_component(component_id)
 
+            name = self.current_llm_call_name.get()
+            if name is None:
+                name = original_func.__name__
+
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
                 hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
+                name=name,
                 llm_type=model_name,
                 version="1.0.0",
                 memory_used=memory_used,
