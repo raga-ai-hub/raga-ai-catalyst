@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
+import uuid
 
 @dataclass
 class OSInfo:
@@ -100,13 +101,15 @@ class NetworkCall:
     response: Dict[str, Any]
 
 class Interaction:
-    def __init__(self, type: str, content: str, timestamp: str):
+    def __init__(self, id, type: str, content: str, timestamp: str):
+        self.id = id
         self.type = type
         self.content = content
         self.timestamp = timestamp
 
     def to_dict(self):
         return {
+            "id": self.id,
             "interaction_type": self.type,
             "content": self.content,
             "timestamp": self.timestamp
@@ -174,6 +177,7 @@ class Component:
                 if isinstance(interaction, dict):
                     self.interactions.append(
                         Interaction(
+                            id=interaction.get("id", str(uuid.uuid4())),
                             type=interaction.get("interaction_type", ""),
                             content=str(interaction.get("content", "")),
                             timestamp=interaction.get("timestamp", datetime.utcnow().isoformat())
@@ -238,6 +242,7 @@ class Trace:
         if interaction_type in ["user_input", "print"]:
             interaction_type = "input" if interaction_type == "user_input" else "output"
             self.interactions.append({
+                "id": str(uuid.uuid4()),
                 "interaction_type": interaction_type,
                 "content": content,
                 "timestamp": datetime.now().isoformat()
@@ -249,6 +254,7 @@ class Trace:
         for interaction in self.interactions:
             if interaction["content"]["caller"]["function"] == name:
                 interactions.append({
+                    "id": interaction["id"],
                     "interaction_type": interaction["interaction_type"],
                     "content": interaction["content"]["content"],
                     "timestamp": interaction["timestamp"]

@@ -93,7 +93,7 @@ class ToolTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(name)
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
             self.add_component(tool_component)
             return result
 
@@ -125,7 +125,7 @@ class ToolTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(name)
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
             self.add_component(tool_component)
             raise
 
@@ -162,7 +162,7 @@ class ToolTracerMixin:
                 output_data=self._sanitize_output(result)
             )
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(name)
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
             self.add_component(tool_component)
             return result
 
@@ -190,7 +190,7 @@ class ToolTracerMixin:
                 error=error_component
             )
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(name)
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
             self.add_component(tool_component)
             raise
 
