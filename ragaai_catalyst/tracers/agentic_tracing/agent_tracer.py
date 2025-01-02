@@ -65,6 +65,8 @@ class AgentTracerMixin:
                         tracer._agent_components = {}
                     tracer._agent_components[component_id] = agent_component
                     
+                    if hasattr(self, "trace") and self.trace is not None:
+                        agent_component["interactions"] = self.trace.get_interactions(name)
                     # If this is a nested agent, add it to parent's children
                     if parent_agent_id:
                         parent_children = tracer.agent_children.get()
@@ -208,7 +210,9 @@ class AgentTracerMixin:
             if not hasattr(self, '_agent_components'):
                 self._agent_components = {}
             self._agent_components[component_id] = agent_component
-
+            if hasattr(self, "trace") and self.trace is not None:
+                agent_component["interactions"] = self.trace.get_interactions(name)
+                
             # If this is a nested agent, add it to parent's children list
             if parent_agent_id:
                 parent_children.append(agent_component)
@@ -281,7 +285,9 @@ class AgentTracerMixin:
                 children=children,
                 parent_id=parent_agent_id  # Add parent ID if exists
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                agent_component["interactions"] = self.trace.get_interactions(name)
+                
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:
                 parent_component = self._agent_components.get(parent_agent_id)
@@ -329,6 +335,8 @@ class AgentTracerMixin:
                 parent_id=parent_agent_id  # Add parent ID if exists
             )
 
+            if hasattr(self, "trace") and self.trace is not None:
+                agent_component["interactions"] = self.trace.get_interactions(name)
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:
                 parent_component = self._agent_components.get(parent_agent_id)

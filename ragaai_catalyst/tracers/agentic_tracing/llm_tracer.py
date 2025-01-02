@@ -503,7 +503,7 @@ class LLMTracerMixin:
 
             # End tracking network calls for this component
             self.end_component(component_id)
-
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -519,7 +519,9 @@ class LLMTracerMixin:
                 cost=cost,
                 usage=token_usage
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             return result
 
@@ -550,6 +552,9 @@ class LLMTracerMixin:
                 error=error_component
             )
 
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             raise
 
@@ -611,7 +616,9 @@ class LLMTracerMixin:
                 cost=cost,
                 usage=token_usage
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             return result
 
@@ -641,7 +648,9 @@ class LLMTracerMixin:
                 output_data=None,
                 error=error_component
             )
-
+            if hasattr(self, "trace") and self.trace is not None:
+                llm_component["interactions"] = self.trace.get_interactions(name)
+                
             self.add_component(llm_component)
             raise
 
