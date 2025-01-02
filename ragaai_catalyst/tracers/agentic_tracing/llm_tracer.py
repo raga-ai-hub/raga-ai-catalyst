@@ -726,7 +726,7 @@ class LLMTracerMixin:
 
                     # Add user interactions if they exist
                     if hasattr(self, "trace") and self.trace is not None:
-                        llm_component["interactions"] = self.trace.get_interactions()
+                        llm_component["interactions"] = self.trace.get_interactions(name)
                     
                     # If this is part of an agent, add to agent's children
                     if parent_agent_id:

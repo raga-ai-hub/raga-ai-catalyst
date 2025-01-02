@@ -194,7 +194,7 @@ class Component:
             "info": self.info,
             "data": self.data,
             "network_calls": [call.to_dict() if hasattr(call, 'to_dict') else call for call in self.network_calls],
-            "interactions": [interaction.to_dict() for interaction in self.interactions]
+            "interactions": self.interactions
         }
 
 class LLMComponent(Component):
@@ -243,9 +243,17 @@ class Trace:
                 "timestamp": datetime.now().isoformat()
             })
 
-    def get_interactions(self):
+    def get_interactions(self, name):
         """Get all user interactions"""
-        return self.interactions
+        interactions = []
+        for interaction in self.interactions:
+            if interaction["content"]["caller"]["function"] == name:
+                interactions.append({
+                    "interaction_type": interaction["interaction_type"],
+                    "content": interaction["content"]["content"],
+                    "timestamp": interaction["timestamp"]
+                })
+        return interactions
 
     def to_dict(self):
         return {
