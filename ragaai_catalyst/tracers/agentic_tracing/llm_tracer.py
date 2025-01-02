@@ -273,26 +273,6 @@ class LLMTracerMixin:
         
         return model or "default"
 
-    def _extract_parameters(self, kwargs, result=None):
-        # TODO: Why are we extracting these specific parameters? We should be able to handle all the parameters for all different models, shoudln't hardcode any model specific parameters
-        """Extract parameters from kwargs or result"""
-        params = {
-            "temperature": kwargs.get("temperature", getattr(result, "temperature", 0.7)),
-            "top_p": kwargs.get("top_p", getattr(result, "top_p", 1.0)),
-            "max_tokens": kwargs.get("max_tokens", getattr(result, "max_tokens", 512))
-        }
-        
-        # Add Google AI specific parameters if available
-        if hasattr(kwargs.get("self", None), "generation_config"):
-            gen_config = kwargs["self"].generation_config
-            params.update({
-                "candidate_count": getattr(gen_config, "candidate_count", 1),
-                "stop_sequences": getattr(gen_config, "stop_sequences", []),
-                "top_k": getattr(gen_config, "top_k", 40)
-            })
-        
-        return params
-
     def _extract_token_usage(self, result):
         """Extract token usage from result"""
         # Handle coroutines
@@ -342,66 +322,11 @@ class LLMTracerMixin:
         }
 
 
-    def _extract_input_data(self, kwargs, result):
-        # TODO: Pass all the parameters, do not hardcode anything
-        """Extract input data from kwargs and result"""
-        # For Vertex AI GenerationResponse
-        if hasattr(result, 'candidates') and hasattr(result, 'usage_metadata'):
-            # Extract generation config
-            generation_config = kwargs.get('generation_config', {})
-            config_dict = {}
-            if hasattr(generation_config, 'temperature'):
-                config_dict['temperature'] = generation_config.temperature
-            if hasattr(generation_config, 'top_p'):
-                config_dict['top_p'] = generation_config.top_p
-            if hasattr(generation_config, 'max_output_tokens'):
-                config_dict['max_tokens'] = generation_config.max_output_tokens
-            if hasattr(generation_config, 'candidate_count'):
-                config_dict['n'] = generation_config.candidate_count
-
-            return {
-                "prompt": kwargs.get('contents', ''),
-                "model": "gemini-1.5-flash-002",  
-                **config_dict
-            }
-
-        # For standard OpenAI format
-        messages = kwargs.get("messages", [])
-        if messages:
-            return {
-                "messages": messages,
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
-            }
-
-        # For text completion format
-        if "prompt" in kwargs:
-            return {
-                "prompt": kwargs["prompt"],
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None),
-                "frequency_penalty": kwargs.get("frequency_penalty", None),
-                "presence_penalty": kwargs.get("presence_penalty", None)
-            }
-
-        # For any other case, try to extract from kwargs
-        if "contents" in kwargs:
-            return {
-                "prompt": kwargs["contents"],
-                "model": kwargs.get("model", "unknown"),
-                "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_tokens", None),
-                "top_p": kwargs.get("top_p", None)
-            }
-
-        print("No input data found")
-        return {}
+    def _extract_input_data(self, args, kwargs, result):
+        return {
+            'args': args,
+            'kwargs': kwargs
+        }
 
     def _calculate_cost(self, token_usage, model_name):
         # TODO: Passing default cost is a faulty logic & implementation and should be fixed
@@ -502,24 +427,28 @@ class LLMTracerMixin:
             memory_used = max(0, end_memory - start_memory)
 
             # Extract token usage and calculate cost
-            token_usage = await self._extract_token_usage(result)
+            token_usage = self._extract_token_usage(result)
             model_name = self._extract_model_name(kwargs)
             cost = self._calculate_cost(token_usage, model_name)
 
             # End tracking network calls for this component
             self.end_component(component_id)
+
+            name = self.current_llm_call_name.get()
+            if name is None:
+                name = original_func.__name__
             
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
                 hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
+                name=name,
                 llm_type=model_name,
                 version="1.0.0",
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(kwargs, result),
+                input_data=self._extract_input_data(args, kwargs, result),
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
@@ -542,17 +471,21 @@ class LLMTracerMixin:
             self.end_component(component_id)
             
             end_time = datetime.now().astimezone()
+
+            name = self.current_llm_call_name.get()
+            if name is None:
+                name = original_func.__name__
             
             llm_component = self.create_llm_component(
                 component_id=component_id,
                 hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
+                name=name,
                 llm_type="unknown",
                 version="1.0.0",
                 memory_used=0,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(kwargs, None),
+                input_data=self._extract_input_data(args, kwargs, None),
                 output_data=None,
                 error=error_component
             )
@@ -620,7 +553,7 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(kwargs, result),
+                input_data=self._extract_input_data(args,kwargs, result),
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
@@ -643,20 +576,25 @@ class LLMTracerMixin:
             self.end_component(component_id)
             
             end_time = datetime.now().astimezone()
+
+            name = self.current_llm_call_name.get()
+            if name is None:
+                name = original_func.__name__
             
             llm_component = self.create_llm_component(
                 component_id=component_id,
                 hash_id=hash_id,
-                name=self.current_llm_call_name.get(),
+                name=name,
                 llm_type="unknown",
                 version="1.0.0",
                 memory_used=0,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(kwargs, None),
+                input_data=self._extract_input_data(args, kwargs, None),
                 output_data=None,
                 error=error_component
             )
+
             if hasattr(self, "trace") and self.trace is not None:
                 llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
@@ -667,27 +605,18 @@ class LLMTracerMixin:
         def decorator(func):
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
-            def wrapper(*args, **kwargs):
+            async def async_wrapper(*args, **kwargs):
                 if not self.is_active:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 
-                # Generate hash ID based on function name, args, and kwargs
-                # hash_input = f"{name or func.__name__}_{str(args)}_{str(kwargs)}"
                 hash_id = generate_unique_hash(func, *args, **kwargs)
                 
-                # Check if we've already traced this call
                 if hash_id in self.seen_hash_ids:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 
                 self.seen_hash_ids.add(hash_id)
-                
-                # Generate a unique ID for this LLM call
                 component_id = str(uuid.uuid4())
-                
-                # Get current agent ID if exists
                 parent_agent_id = self.current_agent_id.get()
-                
-                # Start tracking network calls
                 self.start_component(component_id)
                 
                 start_time = datetime.now()
@@ -695,7 +624,84 @@ class LLMTracerMixin:
                 result = None
                 
                 try:
-                    # Execute LLM call
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    error_info = {
+                        "error": {
+                            "type": type(e).__name__,
+                            "message": str(e),
+                            "traceback": traceback.format_exc(),
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    }
+                    raise
+                finally:
+                    end_time = datetime.now()
+                    llm_component = {
+                        "id": component_id,
+                        "hash_id": hash_id,
+                        "type": "error" if error_info else "llm",
+                        "name": name or func.__name__,
+                        "start_time": start_time.isoformat(),
+                        "end_time": end_time.isoformat(),
+                        "parent_id": parent_agent_id,
+                        "error": error_info["error"] if error_info else None,
+                        "info": {
+                            "cost": {
+                                "input_cost": 0.0,
+                                "output_cost": 0.0,
+                                "total_cost": 0.0
+                            },
+                            "tokens": {
+                                "prompt_tokens": 0,
+                                "completion_tokens": 0,
+                                "total_tokens": 0
+                            },
+                            "error": error_info["error"] if error_info else None
+                        },
+                        "data": {
+                            "input": self._sanitize_input(args, kwargs),
+                            "output": self._sanitize_output(result) if result else None,
+                            "error": error_info["error"] if error_info else None,
+                            "children": []
+                        },
+                        "network_calls": self.component_network_calls.get(component_id, []),
+                    }
+
+                    if hasattr(self, "trace") and self.trace is not None:
+                        llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
+                    
+                    if parent_agent_id:
+                        children = self.agent_children.get()
+                        children.append(llm_component)
+                        self.agent_children.set(children)
+                    else:
+                        self.add_component(llm_component)
+                    
+                    self.end_component(component_id)
+
+            @self.file_tracker.trace_decorator
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                if not self.is_active:
+                    return func(*args, **kwargs)
+                
+                hash_id = generate_unique_hash(func, *args, **kwargs)
+                
+                if hash_id in self.seen_hash_ids:
+                    return func(*args, **kwargs)
+                
+                self.seen_hash_ids.add(hash_id)
+                component_id = str(uuid.uuid4())
+                parent_agent_id = self.current_agent_id.get()
+                self.start_component(component_id)
+                
+                start_time = datetime.now()
+                error_info = None
+                result = None
+                
+                try:
                     result = func(*args, **kwargs)
                     return result
                 except Exception as e:
@@ -710,7 +716,6 @@ class LLMTracerMixin:
                     raise
                 finally:
                     end_time = datetime.now()
-                    # Create LLM component
                     llm_component = {
                         "id": component_id,
                         "hash_id": hash_id,
@@ -719,7 +724,7 @@ class LLMTracerMixin:
                         "start_time": start_time.isoformat(),
                         "end_time": end_time.isoformat(),
                         "parent_id": parent_agent_id,
-                        "error": error_info["error"] if error_info else None,  # Add error at root level
+                        "error": error_info["error"] if error_info else None,
                         "info": {
                             "cost": {
                                 "input_cost": 0.0,
@@ -731,34 +736,30 @@ class LLMTracerMixin:
                                 "completion_tokens": 0,
                                 "total_tokens": 0
                             },
-                            "error": error_info["error"] if error_info else None  # Add error in info section
+                            "error": error_info["error"] if error_info else None
                         },
                         "data": {
                             "input": self._sanitize_input(args, kwargs),
                             "output": self._sanitize_output(result) if result else None,
-                            "error": error_info["error"] if error_info else None,  # Add error in data section
+                            "error": error_info["error"] if error_info else None,
                             "children": []
                         },
                         "network_calls": self.component_network_calls.get(component_id, []),
                     }
 
-                    # Add user interactions if they exist
                     if hasattr(self, "trace") and self.trace is not None:
                         llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                     
-                    # If this is part of an agent, add to agent's children
                     if parent_agent_id:
                         children = self.agent_children.get()
                         children.append(llm_component)
                         self.agent_children.set(children)
                     else:
-                        # Otherwise add as root component
                         self.add_component(llm_component)
                     
-                    # End tracking network calls
                     self.end_component(component_id)
-            
-            return wrapper
+
+            return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
         return decorator
 
     def unpatch_llm_calls(self):

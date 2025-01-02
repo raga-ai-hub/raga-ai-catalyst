@@ -1,5 +1,4 @@
 import functools
-import imp
 import uuid
 from datetime import datetime
 import psutil
