@@ -18,16 +18,12 @@ class UserInteractionTracer:
         self.project_id = contextvars.ContextVar("project_id", default=None)
         self.trace_id = contextvars.ContextVar("trace_id", default=None)
         self.tracer = contextvars.ContextVar("tracer", default=None)
+        self.component_id = contextvars.ContextVar("component_id", default=None)
         self.original_input = builtins.input
         self.original_print = builtins.print
 
     def traced_input(self, prompt=""):
         # Get caller information
-        caller_frame = inspect.currentframe().f_back
-        caller_info = {
-            'function': caller_frame.f_code.co_name,
-        }
-        
         if prompt:
             self.traced_print(prompt, end="")
         try:
@@ -37,23 +33,17 @@ class UserInteractionTracer:
         if hasattr(self.tracer, "trace") and self.tracer.trace is not None:
             self.tracer.trace.add_interaction("user_input", {
                 'content': content,
-                'caller': caller_info
+                'caller': self.component_id.get()
             })
             
         return content
 
     def traced_print(self, *args, **kwargs):
-        # Get caller information
-        caller_frame = inspect.currentframe().f_back
-        caller_info = {
-            'function': caller_frame.f_code.co_name,
-        }
-        
         content = " ".join(str(arg) for arg in args)
         if hasattr(self.tracer, "trace") and self.tracer.trace is not None:
             self.tracer.trace.add_interaction("print", {
                 'content': content,
-                'caller': caller_info
+                'caller': self.component_id.get()
             })
         return self.original_print(*args, **kwargs)
 

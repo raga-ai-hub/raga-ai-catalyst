@@ -46,6 +46,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         self.auto_instrument_llm = auto_instrument_llm
         self.tools: Dict[str, Tool] = {}
         self.call_depth = contextvars.ContextVar("call_depth", default=0)
+        self.current_component_id = contextvars.ContextVar("current_component_id", default=None)
         self.network_tracer = NetworkTracer()
         self.is_active = False
         self.current_agent_id = contextvars.ContextVar("current_agent_id", default=None)
@@ -60,6 +61,8 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         """Start tracking network calls for a component"""
         self.component_network_calls[component_id] = []
         self.network_tracer.network_calls = []  # Reset network calls
+        self.current_component_id.set(component_id)
+        self.user_interaction_tracer.component_id.set(component_id)
 
     def end_component(self, component_id: str):
         """End tracking network calls for a component"""
@@ -72,6 +75,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         self.user_interaction_tracer.project_id.set(self.project_id)
         self.user_interaction_tracer.trace_id.set(self.trace_id)
         self.user_interaction_tracer.tracer = self
+        self.user_interaction_tracer.component_id.set(self.current_component_id.get())
         builtins.print = self.user_interaction_tracer.traced_print
         builtins.input = self.user_interaction_tracer.traced_input
         

@@ -252,7 +252,7 @@ class Trace:
         """Get all user interactions"""
         interactions = []
         for interaction in self.interactions:
-            if interaction["content"]["caller"]["function"] == name:
+            if interaction["content"]["caller"] == name:
                 interactions.append({
                     "id": interaction["id"],
                     "interaction_type": interaction["interaction_type"],

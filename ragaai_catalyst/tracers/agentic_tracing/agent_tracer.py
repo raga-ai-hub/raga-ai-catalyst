@@ -61,7 +61,7 @@ class AgentTracerMixin:
                     )
                     
                     if hasattr(self, "trace") and self.trace is not None:
-                        agent_component["interactions"] = self.trace.get_interactions(agent_component['name'])
+                        agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                         
                     # Store component for later updates
                     if not hasattr(tracer, '_agent_components'):
@@ -208,7 +208,7 @@ class AgentTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['name'])
+                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                         
             # Store component for later reference
             if not hasattr(self, '_agent_components'):
@@ -288,7 +288,7 @@ class AgentTracerMixin:
                 parent_id=parent_agent_id  # Add parent ID if exists
             )
             if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['name'])
+                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                 
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:
@@ -338,7 +338,7 @@ class AgentTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['name'])
+                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                 
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:

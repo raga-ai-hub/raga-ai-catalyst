@@ -525,7 +525,7 @@ class LLMTracerMixin:
                 usage=token_usage
             )
             if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['name'])
+                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
             self.add_component(llm_component)
             return result
@@ -558,7 +558,7 @@ class LLMTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['name'])
+                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
             self.add_component(llm_component)
             raise
@@ -626,7 +626,7 @@ class LLMTracerMixin:
                 usage=token_usage
             )
             if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['name'])
+                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
             self.add_component(llm_component)
             return result
@@ -658,7 +658,7 @@ class LLMTracerMixin:
                 error=error_component
             )
             if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['name'])
+                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
             self.add_component(llm_component)
             raise
@@ -744,7 +744,7 @@ class LLMTracerMixin:
 
                     # Add user interactions if they exist
                     if hasattr(self, "trace") and self.trace is not None:
-                        llm_component["interactions"] = self.trace.get_interactions(llm_component['name'])
+                        llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                     
                     # If this is part of an agent, add to agent's children
                     if parent_agent_id:

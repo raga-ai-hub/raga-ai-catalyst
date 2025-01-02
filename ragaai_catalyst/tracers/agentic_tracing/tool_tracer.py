@@ -1,4 +1,5 @@
 import functools
+import imp
 import uuid
 from datetime import datetime
 import psutil
@@ -93,7 +94,7 @@ class ToolTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -125,7 +126,7 @@ class ToolTracerMixin:
             )
 
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
@@ -162,7 +163,7 @@ class ToolTracerMixin:
                 output_data=self._sanitize_output(result)
             )
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -190,7 +191,7 @@ class ToolTracerMixin:
                 error=error_component
             )
             if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['name'])
+                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
