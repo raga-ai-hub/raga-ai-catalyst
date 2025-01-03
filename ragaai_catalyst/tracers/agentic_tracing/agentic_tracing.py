@@ -52,6 +52,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         self.current_agent_id = contextvars.ContextVar("current_agent_id", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = {}  # Store network calls per component
+        self.component_user_interaction = {}
         
         # Create output directory if it doesn't exist
         self.output_dir = Path("./traces")  # Using default traces directory
@@ -61,6 +62,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         """Start tracking network calls for a component"""
         self.component_network_calls[component_id] = []
         self.network_tracer.network_calls = []  # Reset network calls
+        self.component_user_interaction[component_id] = []
         self.current_component_id.set(component_id)
         self.user_interaction_tracer.component_id.set(component_id)
 
@@ -68,6 +70,8 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         """End tracking network calls for a component"""
         self.component_network_calls[component_id] = self.network_tracer.network_calls.copy()
         self.network_tracer.network_calls = []  # Reset for next component
+        self.component_user_interaction[component_id] = self.user_interaction_tracer.interactions.copy()
+        self.user_interaction_tracer.interactions = []
 
     def start(self):
         """Start tracing"""
@@ -161,11 +165,8 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
 
     def add_component(self, component_data: dict):
         """Add a component to the trace data"""
-        component_id = component_data["id"]
         # Convert dict to appropriate Component type
-        filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls"]}
-        if 'interactions' in component_data.keys():
-            filtered_data["interactions"] = (component_data["interactions"])
+        filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions"]}
                
         if component_data["type"] == "llm":
             component = LLMComponent(**filtered_data)

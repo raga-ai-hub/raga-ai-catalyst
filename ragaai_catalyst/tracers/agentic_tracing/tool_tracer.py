@@ -16,6 +16,7 @@ class ToolTracerMixin:
         self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
+        self.component_user_interaction = {}
         self.gt = None
 
 
@@ -98,12 +99,6 @@ class ToolTracerMixin:
                 output_data=self._sanitize_output(result)
             )
 
-            # Add ground truth to component data if present
-            # if ground_truth is not None:
-            #     tool_component["data"]["gt"] = ground_truth
-
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -134,8 +129,6 @@ class ToolTracerMixin:
                 error=error_component
             )
 
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
@@ -174,13 +167,6 @@ class ToolTracerMixin:
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=self._sanitize_output(result)
             )
-
-            # Add ground truth to component data if present
-            # if ground_truth is not None:
-            #     tool_component["data"]["gt"] = ground_truth
-
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -207,8 +193,6 @@ class ToolTracerMixin:
                 output_data=None,
                 error=error_component
             )
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
@@ -238,6 +222,7 @@ class ToolTracerMixin:
                 "memory_used": kwargs["memory_used"]
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
+            "interactions": self.component_user_interaction.get(kwargs["component_id"], [])
         }
 
         if self.gt: 

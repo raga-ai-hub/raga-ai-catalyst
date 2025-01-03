@@ -19,6 +19,7 @@ class AgentTracerMixin:
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
+        self.component_user_interaction = contextvars.ContextVar("component_user_interaction", default={})
         self.gt = None
 
 
@@ -61,10 +62,7 @@ class AgentTracerMixin:
                         children=[],
                         parent_id=parent_agent_id
                     )
-                    
-                    if hasattr(self, "trace") and self.trace is not None:
-                        agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
-                        
+                      
                     # Store component for later updates
                     if not hasattr(tracer, '_agent_components'):
                         tracer._agent_components = {}
@@ -336,10 +334,7 @@ class AgentTracerMixin:
                 children=children,
                 parent_id=parent_agent_id  # Add parent ID if exists
             )
-
-            if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
-                
+            
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:
                 parent_component = self._agent_components.get(parent_agent_id)
@@ -381,7 +376,8 @@ class AgentTracerMixin:
                 "output": kwargs["output_data"],
                 "children": kwargs.get("children", [])
             },
-            "network_calls": self.component_network_calls.get(kwargs["component_id"], [])
+            "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
+            "interactions": self.component_user_interaction.get(kwargs["component_id"], [])
         }
 
         if self.gt: 

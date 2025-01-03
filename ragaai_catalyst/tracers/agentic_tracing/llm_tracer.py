@@ -35,6 +35,7 @@ class LLMTracerMixin:
             }
         self.current_llm_call_name = contextvars.ContextVar("llm_call_name", default=None)
         self.component_network_calls = {}  
+        self.component_user_interaction = {}
         self.current_component_id = None  
         self.total_tokens = 0
         self.total_cost = 0.0
@@ -388,6 +389,7 @@ class LLMTracerMixin:
                 "memory_used": memory_used
             },
             "network_calls": self.component_network_calls.get(component_id, []),
+            "interactions": self.component_user_interaction.get(component_id, [])
         }
 
         if self.gt: 
@@ -501,10 +503,7 @@ class LLMTracerMixin:
                 output_data=None,
                 error=error_component
             )
-
-            if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
-                
+    
             self.add_component(llm_component)
             raise
 
@@ -575,11 +574,7 @@ class LLMTracerMixin:
                 usage=token_usage
             )
             
-            if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
-                
-            # self.add_component(llm_component)
-            self.llm_data = llm_component
+            self.add_component(llm_component)
             return result
 
         except Exception as e:
@@ -612,10 +607,7 @@ class LLMTracerMixin:
                 output_data=None,
                 error=error_component
             )
-
-            if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
-                
+    
             self.add_component(llm_component)
             raise
 
