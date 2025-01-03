@@ -4,6 +4,7 @@ import functools
 import re
 import tokenize
 import io
+import types
 
 def normalize_source_code(source):
     """
@@ -82,16 +83,23 @@ def generate_unique_hash(func, *args, **kwargs):
     return hash_obj.hexdigest()
 
 def generate_unique_hash_simple(func):
-    """Generate a unique hash based on the function name and normalized source code"""
+    """Generate a unique hash based on the function name and normalized source code.
+    Works for both standalone functions and class methods (where self would be passed)."""
     import hashlib
     import inspect
     
+    # Handle bound methods (instance methods of classes)
+    if hasattr(func, '__self__'):
+        # Get the underlying function from the bound method
+        func = func.__func__
+    
+
     # Get function name
     func_name = func.__name__
     
     # Get and normalize source code based on type
     try:
-        if inspect.isfunction(func) or inspect.ismethod(func):
+        if isinstance(func, (types.FunctionType, types.MethodType)):
             source = inspect.getsource(func)
             # Remove whitespace and normalize line endings
             normalized_source = "\n".join(line.strip() for line in source.splitlines())
@@ -104,7 +112,7 @@ def generate_unique_hash_simple(func):
         normalized_source = str(func)
     
     # Use fixed timestamp for reproducibility
-    timestamp = "2025-01-03T17:59:38+05:30"
+    timestamp = "2025-01-03T18:15:16+05:30"
     
     # Combine components
     hash_input = f"{func_name}_{normalized_source}_{timestamp}"

@@ -16,6 +16,8 @@ class ToolTracerMixin:
         self.current_tool_name = contextvars.ContextVar("tool_name", default=None)
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
+        self.component_user_interaction = {}
+        self.gt = None
 
 
     def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
@@ -35,6 +37,7 @@ class ToolTracerMixin:
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 async_wrapper.metadata = metadata
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 return await self._trace_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
@@ -43,6 +46,7 @@ class ToolTracerMixin:
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 sync_wrapper.metadata = metadata
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 return self._trace_sync_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
@@ -61,7 +65,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(func)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -92,8 +96,6 @@ class ToolTracerMixin:
                 output_data=self._sanitize_output(result)
             )
 
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -124,8 +126,6 @@ class ToolTracerMixin:
                 error=error_component
             )
 
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
@@ -137,7 +137,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(func)
 
         try:
             # Execute the tool
@@ -161,8 +161,6 @@ class ToolTracerMixin:
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=self._sanitize_output(result)
             )
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             return result
 
@@ -189,12 +187,12 @@ class ToolTracerMixin:
                 output_data=None,
                 error=error_component
             )
-            if hasattr(self, "trace") and self.trace is not None:
-                tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
             raise
 
     def create_tool_component(self, **kwargs):
+        
+
         """Create a tool component according to the data structure"""
         start_time = kwargs["start_time"]
         component = {
@@ -218,7 +216,11 @@ class ToolTracerMixin:
                 "memory_used": kwargs["memory_used"]
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
+            "interactions": self.component_user_interaction.get(kwargs["component_id"], [])
         }
+
+        if self.gt: 
+            component["data"]["gt"] = self.gt
 
         return component
 
