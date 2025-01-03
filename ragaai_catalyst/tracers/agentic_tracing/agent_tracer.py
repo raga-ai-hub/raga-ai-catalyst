@@ -19,6 +19,7 @@ class AgentTracerMixin:
         self.current_agent_name = contextvars.ContextVar("agent_name", default=None)
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
+        self.gt = None
 
 
     def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
@@ -33,6 +34,7 @@ class AgentTracerMixin:
                 original_init = target.__init__
                 
                 def wrapped_init(self, *args, **kwargs):
+                    self.gt = kwargs.get('gt', None) if kwargs else None
                     # Set agent context before initializing
                     component_id = str(uuid.uuid4())
                     hash_id = str(uuid.uuid4())
@@ -93,6 +95,7 @@ class AgentTracerMixin:
                                 @self.file_tracker.trace_decorator
                                 @functools.wraps(method)
                                 def wrapped_method(self, *args, **kwargs):
+                                    self.gt = kwargs.get('gt', None) if kwargs else None
                                     # Set this agent as current during method execution
                                     token = tracer.current_agent_id.set(self._agent_component_id)
                                     
@@ -380,6 +383,9 @@ class AgentTracerMixin:
             },
             "network_calls": self.component_network_calls.get(kwargs["component_id"], [])
         }
+
+        if self.gt: 
+            component["data"]["gt"] = self.gt
 
         return component
 
