@@ -156,6 +156,12 @@ class UploadAgenticTraces:
                             "spanType": span["type"],
                         })
                 else:
+                    datasetSpans.append({
+                                "spanId": span["id"],
+                                "spanName": span["name"],
+                                "spanHash": span["hash_id"],
+                                "spanType": span["type"],
+                            })
                     children = span["data"]["children"]
                     for child in children:
                         existing_span = next((s for s in datasetSpans if s["spanHash"] == child["hash_id"]), None)

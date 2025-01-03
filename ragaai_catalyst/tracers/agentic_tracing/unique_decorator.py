@@ -93,6 +93,7 @@ def generate_unique_hash_simple(func):
         # Get the underlying function from the bound method
         func = func.__func__
     
+
     # Get function name
     func_name = func.__name__
     
