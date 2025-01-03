@@ -81,6 +81,38 @@ def generate_unique_hash(func, *args, **kwargs):
     hash_obj = hashlib.md5(hash_input.encode('utf-8'))
     return hash_obj.hexdigest()
 
+def generate_unique_hash_simple(func):
+    """Generate a unique hash based on the function name and normalized source code"""
+    import hashlib
+    import inspect
+    
+    # Get function name
+    func_name = func.__name__
+    
+    # Get and normalize source code based on type
+    try:
+        if inspect.isfunction(func) or inspect.ismethod(func):
+            source = inspect.getsource(func)
+            # Remove whitespace and normalize line endings
+            normalized_source = "\n".join(line.strip() for line in source.splitlines())
+        elif inspect.isclass(func):
+            source = inspect.getsource(func)
+            normalized_source = "\n".join(line.strip() for line in source.splitlines())
+        else:
+            normalized_source = str(func)
+    except (IOError, TypeError):
+        normalized_source = str(func)
+    
+    # Use fixed timestamp for reproducibility
+    timestamp = "2025-01-03T17:59:38+05:30"
+    
+    # Combine components
+    hash_input = f"{func_name}_{normalized_source}_{timestamp}"
+    
+    # Generate MD5 hash
+    hash_obj = hashlib.md5(hash_input.encode('utf-8'))
+    return hash_obj.hexdigest()
+
 class UniqueIdentifier:
     _instance = None
     _hash_cache = {}

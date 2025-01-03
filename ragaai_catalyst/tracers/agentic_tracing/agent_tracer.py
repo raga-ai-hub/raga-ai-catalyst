@@ -4,7 +4,7 @@ from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
 from .unique_decorator import mydecorator
-from .unique_decorator import generate_unique_hash
+from .unique_decorator import generate_unique_hash_simple
 
 import contextvars
 import asyncio
@@ -26,7 +26,7 @@ class AgentTracerMixin:
             # Check if target is a class
             is_class = isinstance(target, type)
             tracer = self  # Store reference to tracer instance
-            top_level_hash_id = generate_unique_hash(target, name, agent_type, version, capabilities)
+            top_level_hash_id = generate_unique_hash_simple(target, name, agent_type, version, capabilities)
             
             if is_class:
                 # Store original __init__

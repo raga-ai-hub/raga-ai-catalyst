@@ -12,7 +12,7 @@ import sys
 import gc
 import traceback
 
-from .unique_decorator import generate_unique_hash   
+from .unique_decorator import generate_unique_hash_simple   
 from .utils.trace_utils import load_model_costs
 from .utils.llm_utils import extract_llm_output
 from .file_name_tracker import TrackName
@@ -406,7 +406,7 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash(original_func, *args, **kwargs)  # Get hash_id from decorator
+        hash_id = generate_unique_hash_simple(original_func, *args, **kwargs)  # Get hash_id from decorator
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -419,6 +419,7 @@ class LLMTracerMixin:
 
         try:
             # Execute the LLM call
+            import pdb; pdb.set_trace()
             result = await original_func(*args, **kwargs)
 
             # Calculate resource usage
@@ -506,7 +507,7 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash(original_func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(original_func, *args, **kwargs)
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -609,7 +610,7 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return await func(*args, **kwargs)
                 
-                hash_id = generate_unique_hash(func, *args, **kwargs)
+                hash_id = generate_unique_hash_simple(func, *args, **kwargs)
                 
                 if hash_id in self.seen_hash_ids:
                     return await func(*args, **kwargs)
@@ -687,7 +688,7 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return func(*args, **kwargs)
                 
-                hash_id = generate_unique_hash(func, *args, **kwargs)
+                hash_id = generate_unique_hash_simple(func, *args, **kwargs)
                 
                 if hash_id in self.seen_hash_ids:
                     return func(*args, **kwargs)

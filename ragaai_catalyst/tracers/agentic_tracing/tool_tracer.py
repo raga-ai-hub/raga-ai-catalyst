@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 import psutil
 from typing import Optional, Any, Dict, List
-from .unique_decorator import generate_unique_hash  # Import the hash generation function directly
+from .unique_decorator import generate_unique_hash_simple  
 import contextvars
 import asyncio
 from .file_name_tracker import TrackName
@@ -61,7 +61,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash(func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -137,7 +137,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash(func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
 
         try:
             # Execute the tool
