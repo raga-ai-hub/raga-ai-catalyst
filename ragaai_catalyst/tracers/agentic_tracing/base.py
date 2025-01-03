@@ -178,7 +178,7 @@ class BaseTracer:
 
             # Change span ids to int
             self.trace = self._change_span_ids_to_int(self.trace)
-            self.trace = self._change_agent_intput_output(self.trace)
+            self.trace = self._change_agent_input_output(self.trace)
             self.trace = self._extract_cost_tokens(self.trace)
             
             # Create traces directory if it doesn't exist
@@ -193,9 +193,6 @@ class BaseTracer:
 
             #replace source code with zip_path
             self.trace.metadata.system_info.source_code = hash_id
-
-            # # Save to JSON file using custom encoder
-            # import pdb; pdb.set_trace()
 
             # Clean up trace_data before saving
             trace_data = self.trace.__dict__
@@ -259,7 +256,7 @@ class BaseTracer:
                     id += 1
         return trace
 
-    def _change_agent_intput_output(self, trace):
+    def _change_agent_input_output(self, trace):
         for span in trace.data[0]["spans"]:
             if span.type == "agent":
                 childrens = span.data["children"]
@@ -268,15 +265,21 @@ class BaseTracer:
                 if childrens:
                     # Find first non-null input going forward
                     for child in childrens:
+                        if "data" not in child:
+                            continue
                         input_data = child["data"].get("input")
+
                         if input_data:
                             span.data["input"] = input_data['args'] if hasattr(input_data, 'args') else input_data
                             break
                     
                     # Find first non-null output going backward
                     for child in reversed(childrens):
+                        if "data" not in child:
+                            continue
                         output_data = child["data"].get("output")
-                        if output_data:
+                
+                        if output_data and output_data != "" and output_data != "None":
                             span.data["output"] = output_data
                             break
         return trace
@@ -327,23 +330,47 @@ class BaseTracer:
                 return obj.to_dict()
             return obj
 
+        def deduplicate_spans(spans):
+            seen_llm_spans = {}  # Dictionary to track unique LLM spans
+            unique_spans = []
+            
+            for span in spans:
+                # Convert span to dictionary if needed
+                span_dict = _to_dict_if_needed(span)
+                
+                # Skip spans without hash_id
+                if 'hash_id' not in span_dict:
+                    continue
+                
+                if span_dict.get('type') == 'llm':
+                    # Create a unique key based on hash_id, input, and output
+                    span_key = (
+                        span_dict.get('hash_id'),
+                        str(span_dict.get('data', {}).get('input')),
+                        str(span_dict.get('data', {}).get('output'))
+                    )
+                    
+                    if span_key not in seen_llm_spans:
+                        seen_llm_spans[span_key] = True
+                        unique_spans.append(span)
+                else:
+                    # For non-LLM spans, process their children if they exist
+                    if 'data' in span_dict and 'children' in span_dict['data']:
+                        children = span_dict['data']['children']
+                        # Filter and deduplicate children
+                        filtered_children = deduplicate_spans(children)
+                        if isinstance(span, dict):
+                            span['data']['children'] = filtered_children
+                        else:
+                            span.data['children'] = filtered_children
+                    unique_spans.append(span)
+            
+            return unique_spans
+
         # Remove any spans without hash ids
-        trace['data'][0]['spans'] = [
-            _to_dict_if_needed(span) for span in trace['data'][0]['spans'] 
-            if 'hash_id' in _to_dict_if_needed(span)
-        ]
-
-        # For spans of type agent, remove any children without hash ids upto any depth
-        for span in trace['data'][0]['spans']:
-            if span['type'] == 'agent':
-                span['data']['children'] = [
-                    _to_dict_if_needed(child) for child in span['data']['children'] 
-                    if 'hash_id' in _to_dict_if_needed(child)
-                ]
-
-                # Recursively remove any children without hash ids upto any depth
-                for child in span['data']['children']:
-                    if 'children' in child:
-                        child['children'] = self._clean_trace(child['children'])
-
+        for data in trace.get('data', []):
+            if 'spans' in data:
+                # First filter out spans without hash_ids, then deduplicate
+                data['spans'] = deduplicate_spans(data['spans'])
+        
         return trace

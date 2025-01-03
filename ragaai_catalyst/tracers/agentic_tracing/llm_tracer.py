@@ -1,16 +1,11 @@
 from typing import Optional, Any, Dict, List
 import asyncio
 import psutil
-import json
 import wrapt
 import functools
 from datetime import datetime
 import uuid
-import os
 import contextvars
-import sys
-import gc
-import pdb
 import traceback
 
 from .unique_decorator import generate_unique_hash_simple   
@@ -40,12 +35,6 @@ class LLMTracerMixin:
         self.current_component_id = None  
         self.total_tokens = 0
         self.total_cost = 0.0
-        # TODO: Multiple spans can have the same hash id, so this needs to be fixed. The cause of the duplicate spans need to be fixed, not the filter it once recorded
-        # Track seen hash IDs to prevent duplicate traces
-        self.seen_hash_ids = set()
-        # Apply decorator to trace_llm_call method
-        # self.trace_llm_call = mydecorator(self.trace_llm_call)
-
         self.llm_data = {}
 
     def instrument_llm_calls(self):
@@ -292,7 +281,13 @@ class LLMTracerMixin:
 
         if 'generation_config' in parameters:
             generation_config = parameters['generation_config']
-            parameters.update(generation_config)
+            # If generation_config is already a dict, use it directly
+            if isinstance(generation_config, dict):
+                config_dict = generation_config
+            else:
+                # Convert GenerationConfig to dictionary if it has a to_dict method, otherwise try to get its __dict__
+                config_dict = getattr(generation_config, 'to_dict', lambda: generation_config.__dict__)()
+            parameters.update(config_dict)
             del parameters['generation_config']
             
         return parameters
@@ -382,8 +377,8 @@ class LLMTracerMixin:
 
     def create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, cost={}, usage={}, error=None, parameters={}):
         # Update total metrics
-        self.total_tokens += usage["total_tokens"]
-        self.total_cost += cost["total_cost"]
+        self.total_tokens += usage.get("total_tokens", 0)
+        self.total_cost += cost.get("total_cost", 0)
 
         component = {
             "id": component_id,
@@ -436,12 +431,6 @@ class LLMTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash_simple(original_func) 
-
-        # Skip if we've already seen this hash_id
-        if hash_id in self.seen_hash_ids:
-            return await original_func(*args, **kwargs)
-
-        self.seen_hash_ids.add(hash_id)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -527,7 +516,6 @@ class LLMTracerMixin:
             raise
 
     def trace_llm_call_sync(self, original_func, *args, **kwargs):
-
         """Sync version of trace_llm_call"""
         if not self.is_active:
             if asyncio.iscoroutinefunction(original_func):
@@ -537,14 +525,6 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash_simple(original_func)
-
-        # Skip if we've already seen this hash_id
-        if hash_id in self.seen_hash_ids:
-            if asyncio.iscoroutinefunction(original_func):
-                return asyncio.run(original_func(*args, **kwargs))
-            return original_func(*args, **kwargs)
-
-        self.seen_hash_ids.add(hash_id)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -645,12 +625,7 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return await func(*args, **kwargs)
                 
-                hash_id = generate_unique_hash_simple(func)
-                
-                if hash_id in self.seen_hash_ids:
-                    return await func(*args, **kwargs)
-                
-                self.seen_hash_ids.add(hash_id)
+                hash_id = generate_unique_hash_simple(func)                
                 component_id = str(uuid.uuid4())
                 parent_agent_id = self.current_agent_id.get()
                 self.start_component(component_id)
@@ -697,10 +672,6 @@ class LLMTracerMixin:
                 
                 hash_id = generate_unique_hash_simple(func)
 
-                if hash_id in self.seen_hash_ids:
-                    return func(*args, **kwargs)
-                
-                self.seen_hash_ids.add(hash_id)
                 component_id = str(uuid.uuid4())
                 parent_agent_id = self.current_agent_id.get()
                 self.start_component(component_id)
@@ -742,10 +713,6 @@ class LLMTracerMixin:
         return decorator
 
     def unpatch_llm_calls(self):
-        """Remove all patches"""
-        # Clear seen hash IDs
-        self.seen_hash_ids.clear()
-        
         # Remove all patches
         for obj, method_name, original_method in self.patches:
             try:
