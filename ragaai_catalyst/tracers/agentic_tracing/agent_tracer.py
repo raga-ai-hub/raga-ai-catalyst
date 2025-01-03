@@ -161,6 +161,9 @@ class AgentTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
 
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+
         # Get parent agent ID if exists
         parent_agent_id = self.current_agent_id.get()
         
@@ -207,20 +210,19 @@ class AgentTracerMixin:
                 parent_id=parent_agent_id
             )
 
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                agent_component["data"]["gt"] = ground_truth
+
             if hasattr(self, "trace") and self.trace is not None:
                 agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                         
-            # Store component for later reference
-            if not hasattr(self, '_agent_components'):
-                self._agent_components = {}
-            self._agent_components[component_id] = agent_component
-                
-            # If this is a nested agent, add it to parent's children list
-            if parent_agent_id:
-                parent_children.append(agent_component)
-                self.agent_children.set(parent_children)
-            else:
-                # Only add to root components if no parent
+            # Add this component as a child to parent's children list
+            parent_children.append(agent_component)
+            self.agent_children.set(parent_children)
+
+            # Only add to root components if no parent
+            if not parent_agent_id:
                 self.add_component(agent_component)
 
             return result
@@ -229,7 +231,7 @@ class AgentTracerMixin:
             self.current_agent_name.reset(agent_name_token)
             self.agent_children.reset(children_token)
 
-    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities,hash_id, *args, **kwargs):
+    async def _trace_agent_execution(self, func, name, agent_type, version, capabilities, hash_id, *args, **kwargs):
         """Asynchronous version of agent tracing"""
         if not self.is_active:
             return await func(*args, **kwargs)
@@ -238,10 +240,9 @@ class AgentTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
 
-        # Initialize empty children list for this agent
-        parent_children = self.agent_children.get()
-        children_token = self.agent_children.set([])
-        
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+
         # Get parent agent ID if exists
         parent_agent_id = self.current_agent_id.get()
         
@@ -249,8 +250,9 @@ class AgentTracerMixin:
         agent_token = self.current_agent_id.set(component_id)
         agent_name_token = self.current_agent_name.set(name)
 
-        # Start tracking network calls for this component
-        self.start_component(component_id)
+        # Initialize empty children list for this agent
+        parent_children = self.agent_children.get()
+        children_token = self.agent_children.set([])
 
         try:
             # Execute the agent
@@ -263,13 +265,6 @@ class AgentTracerMixin:
 
             # Get children components collected during execution
             children = self.agent_children.get()
-            
-            # Set parent_id for all children
-            for child in children:
-                child["parent_id"] = component_id
-
-            # End tracking network calls for this component
-            self.end_component(component_id)
 
             # Create agent component with children and parent if exists
             agent_component = self.create_agent_component(
@@ -285,20 +280,22 @@ class AgentTracerMixin:
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=self._sanitize_output(result),
                 children=children,
-                parent_id=parent_agent_id  # Add parent ID if exists
+                parent_id=parent_agent_id
             )
+
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                agent_component["data"]["gt"] = ground_truth
+
             if hasattr(self, "trace") and self.trace is not None:
                 agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
-                
-            # If this is a nested agent, add it to parent's children
-            if parent_agent_id:
-                parent_component = self._agent_components.get(parent_agent_id)
-                if parent_component:
-                    if 'children' not in parent_component['data']:
-                        parent_component['data']['children'] = []
-                    parent_component['data']['children'].append(agent_component)
-            else:
-                # Only add to root components if no parent
+
+            # Add this component as a child to parent's children list
+            parent_children.append(agent_component)
+            self.agent_children.set(parent_children)
+
+            # Only add to root components if no parent
+            if not parent_agent_id:
                 self.add_component(agent_component)
 
             return result

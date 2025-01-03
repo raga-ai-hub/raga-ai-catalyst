@@ -414,6 +414,9 @@ class LLMTracerMixin:
 
         self.seen_hash_ids.add(hash_id)
 
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+        
         # Start tracking network calls for this component
         self.start_component(component_id)
 
@@ -438,6 +441,9 @@ class LLMTracerMixin:
             if name is None:
                 name = original_func.__name__
             
+            # Create input data with ground truth
+            input_data = self._extract_input_data(args, kwargs, result)
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -448,11 +454,16 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args, kwargs, result),
+                input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
             )
+            
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                llm_component["data"]["gt"] = ground_truth
+                
             if hasattr(self, "trace") and self.trace is not None:
                 llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
@@ -516,6 +527,9 @@ class LLMTracerMixin:
 
         self.seen_hash_ids.add(hash_id)
 
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+        
         # Start tracking network calls for this component
         self.start_component(component_id)
 
@@ -543,6 +557,9 @@ class LLMTracerMixin:
             if name is None:
                 name = original_func.__name__
 
+            # Create input data with ground truth
+            input_data = self._extract_input_data(args, kwargs, result)
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -553,11 +570,16 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args,kwargs, result),
+                input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
             )
+            
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                llm_component["data"]["gt"] = ground_truth
+                
             if hasattr(self, "trace") and self.trace is not None:
                 llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 

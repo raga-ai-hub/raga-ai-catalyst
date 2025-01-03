@@ -63,6 +63,9 @@ class ToolTracerMixin:
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash(func, *args, **kwargs)
 
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+
         # Start tracking network calls for this component
         self.start_component(component_id)
 
@@ -91,6 +94,10 @@ class ToolTracerMixin:
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=self._sanitize_output(result)
             )
+
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                tool_component["data"]["gt"] = ground_truth
 
             if hasattr(self, "trace") and self.trace is not None:
                 tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
@@ -139,6 +146,9 @@ class ToolTracerMixin:
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash(func, *args, **kwargs)
 
+        # Extract ground truth if present
+        ground_truth = kwargs.pop('gt', None) if kwargs else None
+
         try:
             # Execute the tool
             result = await func(*args, **kwargs)
@@ -161,6 +171,11 @@ class ToolTracerMixin:
                 input_data=self._sanitize_input(args, kwargs),
                 output_data=self._sanitize_output(result)
             )
+
+            # Add ground truth to component data if present
+            if ground_truth is not None:
+                tool_component["data"]["gt"] = ground_truth
+
             if hasattr(self, "trace") and self.trace is not None:
                 tool_component["interactions"] = self.trace.get_interactions(tool_component['id'])
             self.add_component(tool_component)
