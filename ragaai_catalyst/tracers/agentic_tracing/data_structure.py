@@ -160,8 +160,9 @@ class ToolInfo:
     memory_used: int
 
 class Component:
-    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None):
+    def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None, error: Optional[Error] = None):
         self.id = id
+        self.error = error
         self.hash_id = hash_id
         self.type = type
         self.name = name

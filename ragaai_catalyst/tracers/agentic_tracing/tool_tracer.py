@@ -17,6 +17,8 @@ class ToolTracerMixin:
         self.current_tool_id = contextvars.ContextVar("tool_id", default=None)
         self.component_network_calls = {}
         self.component_user_interaction = {}
+        self.gt = None
+
 
     def trace_tool(self, name: str, tool_type: str = "generic", version: str = "1.0.0"):
         def decorator(func):
@@ -35,6 +37,7 @@ class ToolTracerMixin:
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 async_wrapper.metadata = metadata
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 return await self._trace_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
@@ -43,6 +46,7 @@ class ToolTracerMixin:
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
                 sync_wrapper.metadata = metadata
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 return self._trace_sync_tool_execution(
                     func, name, tool_type, version, *args, **kwargs
                 )
@@ -62,6 +66,9 @@ class ToolTracerMixin:
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash(func, *args, **kwargs)
+
+        # Extract ground truth if present
+        # ground_truth = kwargs.get('gt', None) if kwargs else None
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -135,6 +142,9 @@ class ToolTracerMixin:
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash(func, *args, **kwargs)
 
+        # Extract ground truth if present
+        # ground_truth = kwargs.get('gt', None) if kwargs else None
+
         try:
             # Execute the tool
             result = await func(*args, **kwargs)
@@ -187,6 +197,8 @@ class ToolTracerMixin:
             raise
 
     def create_tool_component(self, **kwargs):
+        
+
         """Create a tool component according to the data structure"""
         start_time = kwargs["start_time"]
         component = {
@@ -212,6 +224,9 @@ class ToolTracerMixin:
             "network_calls": self.component_network_calls.get(kwargs["component_id"], []),
             "interactions": self.component_user_interaction.get(kwargs["component_id"], [])
         }
+
+        if self.gt: 
+            component["data"]["gt"] = self.gt
 
         return component
 
