@@ -234,32 +234,6 @@ class Trace:
         self.metadata = metadata or Metadata()
         self.data = data or []
         self.replays = replays
-        self.components = []
-        self.interactions = []
-
-    def add_interaction(self, interaction_type, content):
-        """Add a user interaction to the trace"""
-        if interaction_type in ["user_input", "print"]:
-            interaction_type = "input" if interaction_type == "user_input" else "output"
-            self.interactions.append({
-                "id": str(uuid.uuid4()),
-                "interaction_type": interaction_type,
-                "content": content,
-                "timestamp": datetime.now().isoformat()
-            })
-
-    def get_interactions(self, name):
-        """Get all user interactions"""
-        interactions = []
-        for interaction in self.interactions:
-            if interaction["content"]["caller"] == name:
-                interactions.append({
-                    "id": interaction["id"],
-                    "interaction_type": interaction["interaction_type"],
-                    "content": interaction["content"]["content"],
-                    "timestamp": interaction["timestamp"]
-                })
-        return interactions
 
     def to_dict(self):
         return {
@@ -270,6 +244,4 @@ class Trace:
             "metadata": self.metadata.to_dict() if self.metadata else None,
             "data": self.data,
             "replays": self.replays,
-            "components": [component.to_dict() for component in self.components],
-            "interactions": self.interactions
         }
