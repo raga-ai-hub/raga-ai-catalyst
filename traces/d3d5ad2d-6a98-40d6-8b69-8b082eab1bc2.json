@@ -1,0 +1,1018 @@
+{
+  "id": "d3d5ad2d-6a98-40d6-8b69-8b082eab1bc2",
+  "project_name": "prompt_metric_dataset",
+  "start_time": "2025-01-03T12:35:48.232419",
+  "end_time": "2025-01-03T12:36:47.328552",
+  "metadata": {
+    "cost": {
+      "input_cost": 0.00010680000000000001,
+      "output_cost": 0.0004956,
+      "total_cost": 0.0006023999999999999
+    },
+    "tokens": {
+      "prompt_tokens": 712,
+      "completion_tokens": 826,
+      "total_tokens": 1538
+    },
+    "system_info": {
+      "id": "sys_d3d5ad2d-6a98-40d6-8b69-8b082eab1bc2",
+      "os": {
+        "name": "Darwin",
+        "version": "Darwin Kernel Version 24.1.0: Thu Oct 10 21:03:15 PDT 2024; root:xnu-11215.41.3~2/RELEASE_ARM64_T6000",
+        "platform": "arm64",
+        "kernel_version": "24.1.0"
+      },
+      "environment": {
+        "name": "Python",
+        "version": "3.11.11",
+        "packages": [
+          "deprecated==1.2.15",
+          "flask-caching==2.3.0",
+          "flask-cors==4.0.2",
+          "gputil==1.4.0",
+          "markdown==3.7",
+          "markupsafe==3.0.2",
+          "pyyaml==6.0.2",
+          "sqlalchemy==2.0.36",
+          "agentneo==1.2.2",
+          "aiohappyeyeballs==2.4.4",
+          "aiohttp==3.10.2",
+          "aiosignal==1.3.2",
+          "annotated-types==0.7.0",
+          "anyio==4.7.0",
+          "appnope==0.1.4",
+          "asgiref==3.8.1",
+          "astor==0.8.1",
+          "asttokens==3.0.0",
+          "attrs==24.3.0",
+          "backoff==2.2.1",
+          "beautifulsoup4==4.12.3",
+          "blinker==1.9.0",
+          "cachelib==0.9.0",
+          "cachetools==5.5.0",
+          "certifi==2024.12.14",
+          "cffi==1.17.1",
+          "chardet==5.2.0",
+          "charset-normalizer==3.4.0",
+          "click==8.1.8",
+          "comm==0.2.2",
+          "contourpy==1.3.1",
+          "cryptography==43.0.3",
+          "cycler==0.12.1",
+          "dataclasses-json==0.6.7",
+          "debugpy==1.6.7",
+          "decorator==5.1.1",
+          "dirtyjson==1.0.8",
+          "distro==1.9.0",
+          "docstring-parser==0.16",
+          "exceptiongroup==1.2.2",
+          "executing==2.1.0",
+          "fastapi==0.115.6",
+          "filelock==3.16.1",
+          "flask==3.0.3",
+          "fonttools==4.55.3",
+          "frozenlist==1.5.0",
+          "fsspec==2024.12.0",
+          "google==3.0.0",
+          "google-ai-generativelanguage==0.6.10",
+          "google-api-core==2.24.0",
+          "google-api-python-client==2.156.0",
+          "google-auth==2.37.0",
+          "google-auth-httplib2==0.2.0",
+          "google-cloud-aiplatform==1.75.0",
+          "google-cloud-bigquery==3.27.0",
+          "google-cloud-core==2.4.1",
+          "google-cloud-resource-manager==1.14.0",
+          "google-cloud-storage==2.19.0",
+          "google-crc32c==1.6.0",
+          "google-generativeai==0.8.3",
+          "google-resumable-media==2.7.2",
+          "googleapis-common-protos==1.66.0",
+          "greenlet==3.1.1",
+          "groq==0.13.1",
+          "grpc-google-iam-v1==0.13.1",
+          "grpcio==1.68.1",
+          "grpcio-status==1.62.3",
+          "h11==0.14.0",
+          "httpcore==1.0.7",
+          "httplib2==0.22.0",
+          "httpx==0.28.1",
+          "huggingface-hub==0.27.0",
+          "idna==3.10",
+          "importlib-metadata==7.1.0",
+          "ipykernel==6.29.5",
+          "ipython==8.31.0",
+          "itsdangerous==2.2.0",
+          "jedi==0.19.2",
+          "jinja2==3.1.5",
+          "jiter==0.8.2",
+          "joblib==1.4.2",
+          "jsonpatch==1.33",
+          "jsonpointer==3.0.0",
+          "jsonref==1.1.0",
+          "jsonschema==4.23.0",
+          "jsonschema-specifications==2024.10.1",
+          "jupyter-client==8.6.3",
+          "jupyter-core==5.7.2",
+          "kiwisolver==1.4.8",
+          "langchain==0.2.17",
+          "langchain-core==0.2.43",
+          "langchain-text-splitters==0.2.4",
+          "langsmith==0.1.147",
+          "litellm==1.51.1",
+          "llama-index==0.10.0",
+          "llama-index-agent-openai==0.1.7",
+          "llama-index-core==0.10.68.post1",
+          "llama-index-embeddings-openai==0.1.11",
+          "llama-index-legacy==0.9.48.post4",
+          "llama-index-llms-openai==0.1.31",
+          "llama-index-multi-modal-llms-openai==0.1.9",
+          "llama-index-program-openai==0.1.7",
+          "llama-index-question-gen-openai==0.1.3",
+          "llama-index-readers-file==0.1.33",
+          "lxml==5.3.0",
+          "marshmallow==3.23.2",
+          "matplotlib==3.10.0",
+          "matplotlib-inline==0.1.7",
+          "multidict==6.1.0",
+          "mypy-extensions==1.0.0",
+          "nest-asyncio==1.6.0",
+          "networkx==3.4.2",
+          "nltk==3.9.1",
+          "numpy==1.26.4",
+          "openai==1.58.1",
+          "opentelemetry-api==1.25.0",
+          "opentelemetry-exporter-otlp-proto-common==1.25.0",
+          "opentelemetry-exporter-otlp-proto-grpc==1.25.0",
+          "opentelemetry-instrumentation==0.46b0",
+          "opentelemetry-instrumentation-asgi==0.46b0",
+          "opentelemetry-instrumentation-fastapi==0.46b0",
+          "opentelemetry-instrumentation-langchain==0.24.0",
+          "opentelemetry-instrumentation-openai==0.24.0",
+          "opentelemetry-proto==1.25.0",
+          "opentelemetry-sdk==1.25.0",
+          "opentelemetry-semantic-conventions==0.46b0",
+          "opentelemetry-semantic-conventions-ai==0.3.3",
+          "opentelemetry-util-http==0.46b0",
+          "orjson==3.10.12",
+          "packaging==24.2",
+          "pandas==2.2.3",
+          "parso==0.8.4",
+          "pexpect==4.9.0",
+          "pickleshare==0.7.5",
+          "pillow==11.1.0",
+          "pip==24.2",
+          "platformdirs==4.3.6",
+          "prometheus-client==0.21.1",
+          "prompt-toolkit==3.0.48",
+          "propcache==0.2.1",
+          "proto-plus==1.25.0",
+          "protobuf==4.25.5",
+          "psutil==6.0.0",
+          "ptyprocess==0.7.0",
+          "pure-eval==0.2.3",
+          "pyopenssl==24.2.1",
+          "py-cpuinfo==9.0.0",
+          "pyasn1==0.6.1",
+          "pyasn1-modules==0.4.1",
+          "pycparser==2.22",
+          "pydantic==2.10.4",
+          "pydantic-core==2.27.2",
+          "pygments==2.18.0",
+          "pyparsing==3.2.0",
+          "pypdf==4.3.1",
+          "pypdf2==3.0.1",
+          "python-dateutil==2.9.0.post0",
+          "python-dotenv==1.0.1",
+          "python-json-logger==3.2.1",
+          "pytz==2024.2",
+          "pyzmq==26.2.0",
+          "referencing==0.35.1",
+          "regex==2024.11.6",
+          "requests==2.32.3",
+          "requests-toolbelt==1.0.0",
+          "rpds-py==0.22.3",
+          "rsa==4.9",
+          "scikit-learn==1.6.0",
+          "scipy==1.14.1",
+          "setuptools==75.1.0",
+          "shapely==2.0.6",
+          "six==1.17.0",
+          "sniffio==1.3.1",
+          "soupsieve==2.6",
+          "stack-data==0.6.3",
+          "starlette==0.41.3",
+          "striprtf==0.0.26",
+          "tenacity==8.3.0",
+          "textblob==0.18.0.post0",
+          "threadpoolctl==3.5.0",
+          "tiktoken==0.8.0",
+          "tokenizers==0.21.0",
+          "toml==0.10.2",
+          "tornado==6.4.2",
+          "tqdm==4.67.1",
+          "traitlets==5.14.3",
+          "typing-extensions==4.12.2",
+          "typing-inspect==0.9.0",
+          "tzdata==2024.2",
+          "uritemplate==4.1.1",
+          "urllib3==2.3.0",
+          "waitress==2.1.2",
+          "wcwidth==0.2.13",
+          "werkzeug==3.1.3",
+          "wheel==0.44.0",
+          "wrapt==1.17.0",
+          "xmltodict==0.14.2",
+          "yarl==1.18.3",
+          "zipp==3.21.0",
+          "autocommand==2.2.2",
+          "backports.tarfile==1.2.0",
+          "importlib-resources==6.4.0",
+          "inflect==7.3.1",
+          "jaraco.collections==5.1.0",
+          "jaraco.context==5.3.0",
+          "jaraco.functools==4.0.1",
+          "jaraco.text==3.12.1",
+          "more-itertools==10.3.0",
+          "tomli==2.0.1",
+          "typeguard==4.3.0"
+        ],
+        "env_path": "/Users/abs/miniconda3/envs/catalyst",
+        "command_to_run": "python ai_travel_agent.py"
+      },
+      "source_code": "090b20953921e3fdffac51fc7ec04a6b7491a4518d12ddee8afb8b66946a76d9"
+    },
+    "resources": {
+      "cpu": {
+        "info": {
+          "name": "arm",
+          "cores": 10,
+          "threads": 10
+        },
+        "interval": "5s",
+        "values": [
+          15.8
+        ]
+      },
+      "memory": {
+        "info": {
+          "total": 16.0,
+          "free": 6.3413238525390625
+        },
+        "interval": "5s",
+        "values": [
+          60.4
+        ]
+      },
+      "disk": {
+        "info": {
+          "total": 460.4317207336426,
+          "free": 149.12616729736328
+        },
+        "interval": "5s",
+        "read": [
+          203533.71142578125
+        ],
+        "write": [
+          161761.43359375
+        ]
+      },
+      "network": {
+        "info": {
+          "upload_speed": 1852.45703125,
+          "download_speed": 1464.9306640625
+        },
+        "interval": "5s",
+        "uploads": [
+          1852.45703125
+        ],
+        "downloads": [
+          1464.9306640625
+        ]
+      }
+    },
+    "total_cost": 0.0006023999999999999,
+    "total_tokens": 1538
+  },
+  "data": [
+    {
+      "start_time": "2025-01-03T12:35:47.952998",
+      "end_time": "2025-01-03T12:36:47.328550",
+      "spans": [
+        {
+          "id": 1,
+          "hash_id": "57650f26-0d86-4311-82fa-1bc9d90a31a5",
+          "type": "agent",
+          "name": "travel_agent",
+          "start_time": "2025-01-03T12:35:48.237350",
+          "end_time": "2025-01-03T12:36:47.328322",
+          "parent_id": 0,
+          "info": {
+            "agent_type": "generic",
+            "version": "1.0.0",
+            "capabilities": [],
+            "memory_used": 4079616
+          },
+          "data": {
+            "input": {
+              "args": [],
+              "kwargs": {
+                "model": "gpt-4o-mini",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "\nExtract key travel preferences from the following user input:\n\"Ladakh, 7 days, $1000, adventure\"\n\nPlease provide the extracted information in this format:\nDestination:\nActivities:\nBudget:\nDuration (in days):\n"
+                  }
+                ],
+                "max_tokens": 512,
+                "temperature": 0.7
+              }
+            },
+            "output": "**Travel Summary for Ladakh Adventure Trip**\n\n- **Destination:** Ladakh\n- **Budget:** $1,000\n- **Duration:** 7 days\n\n**Itinerary Overview:**\n\n- **Day 1: Arrival in Leh**\n  - Arrive at Leh Kushok Bakula Rimpochee Airport, taxi to budget guesthouse ($20/night).\n  - Acclimatize and explore Leh Market.\n  - Dinner at a local restaurant ($10).\n\n- **Day 2: Leh Local Sightseeing**\n  - Visit Shanti Stupa and Leh Palace; lunch at a local caf\u00e9 ($10).\n  - Afternoon visit to Sankar Monastery.\n  - Dinner at a local restaurant ($10).\n\n- **Day 3: Nubra Valley Excursion**\n  - Depart for Nubra Valley via Khardung La Pass; packed lunch en route ($5).\n  - Check into a guesthouse or camp ($30).\n  - Visit Diskit Monastery in the evening; dinner ($10).\n\n- **Day 4: Hunder Sand Dunes**\n  - Camel rides in Hunder Sand Dunes ($15); lunch at a nearby eatery ($10).\n  - Return to Diskit or explore local villages; relax in the evening.\n\n**Budget Allocation:**\n- Estimated flight cost from Bengaluru to Ladakh: ~$700.\n- Remaining budget for accommodation, food, transport, and activities: ~$300.",
+            "children": [
+              {
+                "id": 2,
+                "hash_id": "c76ace8be39744e599373579a8367047",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "create",
+                "start_time": "2025-01-03T12:36:18.028152+05:30",
+                "end_time": "2025-01-03T12:36:19.567690+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "llm_type": "gpt-4o-mini",
+                  "version": "1.0.0",
+                  "memory_used": 589824,
+                  "cost": {
+                    "input_cost": 7.8e-06,
+                    "output_cost": 1.44e-05,
+                    "total_cost": 2.22e-05
+                  },
+                  "tokens": {
+                    "prompt_tokens": 52,
+                    "completion_tokens": 24,
+                    "total_tokens": 76
+                  }
+                },
+                "data": {
+                  "input": {
+                    "args": [],
+                    "kwargs": {
+                      "model": "gpt-4o-mini",
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "\nExtract key travel preferences from the following user input:\n\"Ladakh, 7 days, $1000, adventure\"\n\nPlease provide the extracted information in this format:\nDestination:\nActivities:\nBudget:\nDuration (in days):\n"
+                        }
+                      ],
+                      "max_tokens": 512,
+                      "temperature": 0.7
+                    }
+                  },
+                  "output": [
+                    {
+                      "content": "Destination: Ladakh  \nActivities: Adventure  \nBudget: $1000  \nDuration (in days): 7  ",
+                      "role": "assistant"
+                    }
+                  ],
+                  "memory_used": 589824
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.02994,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "a917ffe1-5131-4f64-a705-0dd7fe6cae5c",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "419bbb54-6dfe-44ae-a98a-77985bd45f17",
+                    "interaction_type": "output",
+                    "content": "Welcome to the Personalized Travel Planner!\n",
+                    "timestamp": "2025-01-03T12:35:48.237767"
+                  },
+                  {
+                    "id": "ffd6e126-f80a-4897-a297-a9b9e6dc3815",
+                    "interaction_type": "output",
+                    "content": "Please describe your ideal vacation: ",
+                    "timestamp": "2025-01-03T12:35:48.237819"
+                  },
+                  {
+                    "id": "f40e1f0f-5f36-438e-89eb-4ca3f4dfe36f",
+                    "interaction_type": "input",
+                    "content": "Ladakh, 7 days, $1000, adventure",
+                    "timestamp": "2025-01-03T12:36:17.915181"
+                  }
+                ]
+              },
+              {
+                "id": 3,
+                "hash_id": "d3358409725eeb32ad3dfa1aa8e4c557",
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2025-01-03T12:36:18.020420",
+                "end_time": "2025-01-03T12:36:19.568380",
+                "parent_id": 1,
+                "error": null,
+                "info": {
+                  "cost": {
+                    "input_cost": 0.0,
+                    "output_cost": 0.0,
+                    "total_cost": 0.0
+                  },
+                  "tokens": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                  },
+                  "error": null
+                },
+                "data": {
+                  "input": "['\\nExtract key travel preferences from the following user input:\\n\"Ladakh, 7 days, $1000, adventure\"\\n\\nPlease provide the extracted information in this format:\\nDestination:\\nActivities:\\nBudget:\\nDuration (in days):\\n']",
+                  "output": "Destination: Ladakh  \nActivities: Adventure  \nBudget: $1000  \nDuration (in days): 7",
+                  "error": null,
+                  "children": []
+                },
+                "network_calls": [],
+                "interactions": []
+              },
+              {
+                "id": 4,
+                "hash_id": "8c4b18d97f69834f9d25006cb7ef814f",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "weather_tool",
+                "start_time": "2025-01-03T12:36:19.569209+05:30",
+                "end_time": "2025-01-03T12:36:19.721205+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 0
+                },
+                "data": {
+                  "input": "['Ladakh']",
+                  "output": "Weather data not available.",
+                  "memory_used": 0
+                },
+                "network_calls": [
+                  {
+                    "url": "http://api.openweathermap.org/data/2.5/weather",
+                    "method": "get",
+                    "status_code": 401,
+                    "response_time": 0.150448,
+                    "bytes_sent": 121,
+                    "bytes_received": 459,
+                    "protocol": "http",
+                    "connection_id": "380c57fc-aa71-44ab-8f25-00a8ad84bd5b",
+                    "parent_id": null,
+                    "request": {
+                      "headers": {
+                        "User-Agent": "python-requests/2.32.3",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept": "*/*",
+                        "Connection": "keep-alive"
+                      },
+                      "body": null
+                    },
+                    "response": {
+                      "headers": {
+                        "Server": "openresty",
+                        "Date": "Fri, 03 Jan 2025 07:06:19 GMT",
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Content-Length": "108",
+                        "Connection": "keep-alive",
+                        "X-Cache-Key": "/data/2.5/weather?q=ladakh&units=metric",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST"
+                      },
+                      "body": "{\"cod\":401, \"message\": \"Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.\"}"
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "4e072e85-4754-4194-9ff3-74ca1f2cdd6c",
+                    "interaction_type": "output",
+                    "content": "\nExtracted Preferences:",
+                    "timestamp": "2025-01-03T12:36:19.568436"
+                  },
+                  {
+                    "id": "0ea209c5-c08d-46c7-9881-c6486776dc0c",
+                    "interaction_type": "output",
+                    "content": "Destination: Ladakh  \nActivities: Adventure  \nBudget: $1000  \nDuration (in days): 7",
+                    "timestamp": "2025-01-03T12:36:19.568505"
+                  },
+                  {
+                    "id": "f3481eca-6851-423e-a2c8-61b67879faeb",
+                    "interaction_type": "output",
+                    "content": "Calculating weather for: Ladakh",
+                    "timestamp": "2025-01-03T12:36:19.570246"
+                  }
+                ]
+              },
+              {
+                "id": 5,
+                "hash_id": "f0334228f6f8c150836419759b08d37d",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "flight_price_estimator_tool",
+                "start_time": "2025-01-03T12:36:22.414066+05:30",
+                "end_time": "2025-01-03T12:36:22.414585+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 0
+                },
+                "data": {
+                  "input": "['Bengalutu', 'Ladakh']",
+                  "output": "Estimated price from Bengalutu to Ladakh: $500-$1000",
+                  "memory_used": 0
+                },
+                "network_calls": [],
+                "interactions": [
+                  {
+                    "id": "1c70ca26-8f38-48c5-a7d8-17cd47890f4c",
+                    "interaction_type": "output",
+                    "content": "\nWeather in Ladakh: Weather data not available.",
+                    "timestamp": "2025-01-03T12:36:19.721509"
+                  },
+                  {
+                    "id": "66db5bb5-d625-487f-b9ee-24e2f25141fd",
+                    "interaction_type": "output",
+                    "content": "Please enter your departure city: ",
+                    "timestamp": "2025-01-03T12:36:19.721548"
+                  },
+                  {
+                    "id": "9e19b7b3-fbcc-45f8-bd36-835729fc7004",
+                    "interaction_type": "output",
+                    "content": "Please enter your departure city: ",
+                    "timestamp": "2025-01-03T12:36:19.721563"
+                  },
+                  {
+                    "id": "d66137a3-319f-4568-9f9a-7adb8416a0ce",
+                    "interaction_type": "input",
+                    "content": "Bengalutu",
+                    "timestamp": "2025-01-03T12:36:22.413313"
+                  }
+                ]
+              },
+              {
+                "id": 6,
+                "hash_id": "8c4b18d97f69834f9d25006cb7ef814f",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "weather_tool",
+                "start_time": "2025-01-03T12:36:22.418355+05:30",
+                "end_time": "2025-01-03T12:36:22.520311+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 16384
+                },
+                "data": {
+                  "input": "['Ladakh']",
+                  "output": "Weather data not available.",
+                  "memory_used": 16384
+                },
+                "network_calls": [
+                  {
+                    "url": "http://api.openweathermap.org/data/2.5/weather",
+                    "method": "get",
+                    "status_code": 401,
+                    "response_time": 0.100273,
+                    "bytes_sent": 121,
+                    "bytes_received": 459,
+                    "protocol": "http",
+                    "connection_id": "e6004622-b651-4a46-9b80-8541635bf494",
+                    "parent_id": null,
+                    "request": {
+                      "headers": {
+                        "User-Agent": "python-requests/2.32.3",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept": "*/*",
+                        "Connection": "keep-alive"
+                      },
+                      "body": null
+                    },
+                    "response": {
+                      "headers": {
+                        "Server": "openresty",
+                        "Date": "Fri, 03 Jan 2025 07:06:22 GMT",
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Content-Length": "108",
+                        "Connection": "keep-alive",
+                        "X-Cache-Key": "/data/2.5/weather?q=ladakh&units=metric",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST"
+                      },
+                      "body": "{\"cod\":401, \"message\": \"Invalid API key. Please see https://openweathermap.org/faq#error401 for more info.\"}"
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "ce22e3a4-4521-4647-a301-6d1ae8415925",
+                    "interaction_type": "output",
+                    "content": "Estimated price from Bengalutu to Ladakh: $500-$1000",
+                    "timestamp": "2025-01-03T12:36:22.414739"
+                  },
+                  {
+                    "id": "89d75147-aceb-4815-9cc4-2e2b5e49d358",
+                    "interaction_type": "output",
+                    "content": "Calculating weather for: Ladakh",
+                    "timestamp": "2025-01-03T12:36:22.419269"
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "hash_id": "f0334228f6f8c150836419759b08d37d",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "flight_price_estimator_tool",
+                "start_time": "2025-01-03T12:36:22.522222+05:30",
+                "end_time": "2025-01-03T12:36:22.522654+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 0
+                },
+                "data": {
+                  "input": "['Bengalutu', 'Ladakh']",
+                  "output": "Estimated price from Bengalutu to Ladakh: $500-$1000",
+                  "memory_used": 0
+                },
+                "network_calls": [],
+                "interactions": []
+              },
+              {
+                "id": 8,
+                "hash_id": "872fabf8a7f09bed59370b8d6ddbbecd",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "create",
+                "start_time": "2025-01-03T12:36:22.536294+05:30",
+                "end_time": "2025-01-03T12:36:42.741961+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "llm_type": "gpt-4o-mini",
+                  "version": "1.0.0",
+                  "memory_used": 163840,
+                  "cost": {
+                    "input_cost": 1.185e-05,
+                    "output_cost": 0.0003072,
+                    "total_cost": 0.00031905
+                  },
+                  "tokens": {
+                    "prompt_tokens": 79,
+                    "completion_tokens": 512,
+                    "total_tokens": 591
+                  }
+                },
+                "data": {
+                  "input": {
+                    "args": [],
+                    "kwargs": {
+                      "model": "gpt-4o-mini",
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "As a Itinerary Agent, create a 7-day itinerary for a trip to Ladakh.\n        Weather: Weather data not available.\n        Budget: $1000.0\n        Flight Price: Estimated price from Bengalutu to Ladakh: $500-$1000\n        Preferences: No specific preferences\n        \n        Please provide a detailed day-by-day itinerary."
+                        }
+                      ],
+                      "max_tokens": 512,
+                      "temperature": 0.7
+                    }
+                  },
+                  "output": [
+                    {
+                      "content": "Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \n\n### Day 1: Arrival in Leh\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\n- **Accommodation:** Budget guesthouse ($20/night).\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\n\n### Day 2: Leh Local Sightseeing\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\n- **Evening:** Explore the local markets further or relax at your guesthouse.\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\n\n### Day 3: Nubra Valley Excursion\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\n- **Lunch:** Packed lunch en route ($5).\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\n\n### Day 4: Hunder Sand Dunes\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\n- **Lunch:** Local food at a nearby eatery ($10).\n- **Afternoon:** Return to Diskit or explore local villages.\n- **Evening:** Relax",
+                      "role": "assistant"
+                    }
+                  ],
+                  "memory_used": 163840
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.009373,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "b67b7337-df0d-427a-9fc1-e8cf1cead2f7",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": []
+              },
+              {
+                "id": 9,
+                "hash_id": "4ce79763da629af027624bd4ae88956d",
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2025-01-03T12:36:22.523665",
+                "end_time": "2025-01-03T12:36:42.742483",
+                "parent_id": 1,
+                "error": null,
+                "info": {
+                  "cost": {
+                    "input_cost": 0.0,
+                    "output_cost": 0.0,
+                    "total_cost": 0.0
+                  },
+                  "tokens": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                  },
+                  "error": null
+                },
+                "data": {
+                  "input": "['As a Itinerary Agent, create a 7-day itinerary for a trip to Ladakh.\\n        Weather: Weather data not available.\\n        Budget: $1000.0\\n        Flight Price: Estimated price from Bengalutu to Ladakh: $500-$1000\\n        Preferences: No specific preferences\\n        \\n        Please provide a detailed day-by-day itinerary.']",
+                  "output": "Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \n\n### Day 1: Arrival in Leh\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\n- **Accommodation:** Budget guesthouse ($20/night).\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\n\n### Day 2: Leh Local Sightseeing\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\n- **Evening:** Explore the local markets further or relax at your guesthouse.\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\n\n### Day 3: Nubra Valley Excursion\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\n- **Lunch:** Packed lunch en route ($5).\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\n\n### Day 4: Hunder Sand Dunes\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\n- **Lunch:** Local food at a nearby eatery ($10).\n- **Afternoon:** Return to Diskit or explore local villages.\n- **Evening:** Relax",
+                  "error": null,
+                  "children": []
+                },
+                "network_calls": [],
+                "interactions": []
+              },
+              {
+                "id": 10,
+                "hash_id": "ef3de78348c4a5b4d13a40724c4eac1b",
+                "type": "llm",
+                "name": "plan_itinerary",
+                "start_time": "2025-01-03T12:36:22.415629",
+                "end_time": "2025-01-03T12:36:42.742518",
+                "parent_id": 1,
+                "error": null,
+                "info": {
+                  "cost": {
+                    "input_cost": 0.0,
+                    "output_cost": 0.0,
+                    "total_cost": 0.0
+                  },
+                  "tokens": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                  },
+                  "error": null
+                },
+                "data": {
+                  "input": "['<__main__.ItineraryAgent object at 0x16b10dfd0>', \"{'destination': 'Ladakh', 'origin': 'Bengalutu', 'budget': '1000.0', 'budget_currency': 'USD'}\", '7']",
+                  "output": "Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \n\n### Day 1: Arrival in Leh\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\n- **Accommodation:** Budget guesthouse ($20/night).\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\n\n### Day 2: Leh Local Sightseeing\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\n- **Evening:** Explore the local markets further or relax at your guesthouse.\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\n\n### Day 3: Nubra Valley Excursion\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\n- **Lunch:** Packed lunch en route ($5).\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\n\n### Day 4: Hunder Sand Dunes\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\n- **Lunch:** Local food at a nearby eatery ($10).\n- **Afternoon:** Return to Diskit or explore local villages.\n- **Evening:** Relax",
+                  "error": null,
+                  "children": []
+                },
+                "network_calls": [],
+                "interactions": []
+              },
+              {
+                "id": 11,
+                "hash_id": "4abd4de166c110e2ac5ccf2a84fbf414",
+                "source_hash_id": null,
+                "type": "tool",
+                "name": "currency_converter_tool",
+                "start_time": "2025-01-03T12:36:42.743798+05:30",
+                "end_time": "2025-01-03T12:36:43.084378+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "tool_type": "generic",
+                  "version": "1.0.0",
+                  "memory_used": 81920
+                },
+                "data": {
+                  "input": "['1000.0', 'USD', 'INR']",
+                  "output": "None",
+                  "memory_used": 81920
+                },
+                "network_calls": [
+                  {
+                    "url": "https://v6.exchangerate-api.com/v6/None/pair/USD/INR",
+                    "method": "get",
+                    "status_code": 403,
+                    "response_time": 0.338302,
+                    "bytes_sent": 121,
+                    "bytes_received": 510,
+                    "protocol": "https",
+                    "connection_id": "dd2a1606-af68-43f2-8eb8-fe8eec67b092",
+                    "parent_id": null,
+                    "request": {
+                      "headers": {
+                        "User-Agent": "python-requests/2.32.3",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept": "*/*",
+                        "Connection": "keep-alive"
+                      },
+                      "body": null
+                    },
+                    "response": {
+                      "headers": {
+                        "Date": "Fri, 03 Jan 2025 07:06:43 GMT",
+                        "Content-Type": "application/json",
+                        "Content-Length": "121",
+                        "Connection": "keep-alive",
+                        "access-control-allow-headers": "*",
+                        "access-control-allow-origin": "*",
+                        "Content-Encoding": "gzip",
+                        "CF-Cache-Status": "DYNAMIC",
+                        "Server": "cloudflare",
+                        "CF-RAY": "8fc125d1f91ac1c4-BLR",
+                        "alt-svc": "h3=\":443\"; ma=86400"
+                      },
+                      "body": "{\"result\":\"error\",\"documentation\":\"https://www.exchangerate-api.com/docs\",\"terms-of-use\":\"https://www.exchangerate-api.com/terms\",\"error-type\":\"invalid-key\"}"
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "3f02de7a-7b26-45bc-9e81-cb26992e73a8",
+                    "interaction_type": "output",
+                    "content": "\nPlanned Itinerary:",
+                    "timestamp": "2025-01-03T12:36:42.742598"
+                  },
+                  {
+                    "id": "86a04b30-c7de-41a9-a885-1750a0a670aa",
+                    "interaction_type": "output",
+                    "content": "Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \n\n### Day 1: Arrival in Leh\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\n- **Accommodation:** Budget guesthouse ($20/night).\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\n\n### Day 2: Leh Local Sightseeing\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\n- **Evening:** Explore the local markets further or relax at your guesthouse.\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\n\n### Day 3: Nubra Valley Excursion\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\n- **Lunch:** Packed lunch en route ($5).\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\n\n### Day 4: Hunder Sand Dunes\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\n- **Lunch:** Local food at a nearby eatery ($10).\n- **Afternoon:** Return to Diskit or explore local villages.\n- **Evening:** Relax",
+                    "timestamp": "2025-01-03T12:36:42.742641"
+                  }
+                ]
+              },
+              {
+                "id": 12,
+                "hash_id": "8bf4a0b29f8fc05700c431dbdadf9c09",
+                "source_hash_id": null,
+                "type": "llm",
+                "name": "create",
+                "start_time": "2025-01-03T12:36:43.101158+05:30",
+                "end_time": "2025-01-03T12:36:47.327584+05:30",
+                "error": null,
+                "parent_id": 1,
+                "info": {
+                  "llm_type": "gpt-4o-mini",
+                  "version": "1.0.0",
+                  "memory_used": 147456,
+                  "cost": {
+                    "input_cost": 8.715e-05,
+                    "output_cost": 0.000174,
+                    "total_cost": 0.00026115
+                  },
+                  "tokens": {
+                    "prompt_tokens": 581,
+                    "completion_tokens": 290,
+                    "total_tokens": 871
+                  }
+                },
+                "data": {
+                  "input": {
+                    "args": [],
+                    "kwargs": {
+                      "model": "gpt-4o-mini",
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "\nSummarize the following travel plan:\n\nDestination: Ladakh\nActivities: Adventure\nBudget: $1000\nDuration: 7 days\nItinerary: Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \n\n### Day 1: Arrival in Leh\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\n- **Accommodation:** Budget guesthouse ($20/night).\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\n\n### Day 2: Leh Local Sightseeing\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\n- **Evening:** Explore the local markets further or relax at your guesthouse.\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\n\n### Day 3: Nubra Valley Excursion\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\n- **Lunch:** Packed lunch en route ($5).\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\n\n### Day 4: Hunder Sand Dunes\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\n- **Lunch:** Local food at a nearby eatery ($10).\n- **Afternoon:** Return to Diskit or explore local villages.\n- **Evening:** Relax\nWeather: Weather data not available.\nFlight Price: Estimated price from Bengalutu to Ladakh: $500-$1000\n\nTravel Summary:\n"
+                        }
+                      ],
+                      "max_tokens": 512,
+                      "temperature": 0.7
+                    }
+                  },
+                  "output": [
+                    {
+                      "content": "**Travel Summary for Ladakh Adventure Trip**\n\n- **Destination:** Ladakh\n- **Budget:** $1,000\n- **Duration:** 7 days\n\n**Itinerary Overview:**\n\n- **Day 1: Arrival in Leh**\n  - Arrive at Leh Kushok Bakula Rimpochee Airport, taxi to budget guesthouse ($20/night).\n  - Acclimatize and explore Leh Market.\n  - Dinner at a local restaurant ($10).\n\n- **Day 2: Leh Local Sightseeing**\n  - Visit Shanti Stupa and Leh Palace; lunch at a local caf\u00e9 ($10).\n  - Afternoon visit to Sankar Monastery.\n  - Dinner at a local restaurant ($10).\n\n- **Day 3: Nubra Valley Excursion**\n  - Depart for Nubra Valley via Khardung La Pass; packed lunch en route ($5).\n  - Check into a guesthouse or camp ($30).\n  - Visit Diskit Monastery in the evening; dinner ($10).\n\n- **Day 4: Hunder Sand Dunes**\n  - Camel rides in Hunder Sand Dunes ($15); lunch at a nearby eatery ($10).\n  - Return to Diskit or explore local villages; relax in the evening.\n\n**Budget Allocation:**\n- Estimated flight cost from Bengaluru to Ladakh: ~$700.\n- Remaining budget for accommodation, food, transport, and activities: ~$300.",
+                      "role": "assistant"
+                    }
+                  ],
+                  "memory_used": 147456
+                },
+                "network_calls": [
+                  {
+                    "url": "api.openai.com:443",
+                    "method": "CONNECT",
+                    "status_code": null,
+                    "response_time": 0.025717,
+                    "bytes_sent": 0,
+                    "bytes_received": 0,
+                    "protocol": "http",
+                    "connection_id": "4e7b71ea-c85c-4165-8ac0-44edb20e70e8",
+                    "parent_id": null,
+                    "request": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "response": {
+                      "headers": null,
+                      "body": null
+                    },
+                    "error": null
+                  }
+                ],
+                "interactions": [
+                  {
+                    "id": "9cae7cd3-1082-4a29-bbd7-b64e22bdfaed",
+                    "interaction_type": "output",
+                    "content": "\nCurrency conversion not available.",
+                    "timestamp": "2025-01-03T12:36:43.085156"
+                  }
+                ]
+              },
+              {
+                "id": 13,
+                "hash_id": "530fbec50592f16275bb22a86dd2d39e",
+                "type": "llm",
+                "name": "llm_call",
+                "start_time": "2025-01-03T12:36:43.087175",
+                "end_time": "2025-01-03T12:36:47.328167",
+                "parent_id": 1,
+                "error": null,
+                "info": {
+                  "cost": {
+                    "input_cost": 0.0,
+                    "output_cost": 0.0,
+                    "total_cost": 0.0
+                  },
+                  "tokens": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                  },
+                  "error": null
+                },
+                "data": {
+                  "input": "[\"\\nSummarize the following travel plan:\\n\\nDestination: Ladakh\\nActivities: Adventure\\nBudget: $1000\\nDuration: 7 days\\nItinerary: Here's a detailed 7-day itinerary for a trip to Ladakh, tailored to fit within a budget of $1,000. Given the estimated flight price from Bengaluru to Ladakh ranges between $500 and $1,000, this itinerary assumes a flight cost of around $700, which leaves you with about $300 for accommodation, food, transport, and activities. \\n\\n### Day 1: Arrival in Leh\\n- **Morning:** Arrive at Leh Kushok Bakula Rimpochee Airport. Take a taxi to your accommodation in Leh (budget guesthouse or homestay).\\n- **Accommodation:** Budget guesthouse ($20/night).\\n- **Afternoon:** Rest and acclimatize to the altitude (approx. 3,500 meters).\\n- **Evening:** Explore Leh Market, where you can find local handicrafts and souvenirs.\\n- **Dinner:** Try local cuisine at a nearby restaurant ($10).\\n\\n### Day 2: Leh Local Sightseeing\\n- **Morning:** Breakfast at your accommodation. Visit the **Shanti Stupa** for beautiful views of Leh and the surrounding mountains.\\n- **Mid-Morning:** Visit the **Leh Palace** and learn about its history.\\n- **Lunch:** Eat at a local caf\u00e9 or restaurant ($10).\\n- **Afternoon:** Visit **Sankar Monastery** and possibly attend a prayer session.\\n- **Evening:** Explore the local markets further or relax at your guesthouse.\\n- **Dinner:** Enjoy dinner at a local restaurant ($10).\\n\\n### Day 3: Nubra Valley Excursion\\n- **Early Morning:** Depart for Nubra Valley via the **Khardung La Pass** (one of the highest motorable roads).\\n- **Activity:** Stop at the pass for photo opportunities and enjoy the scenic views.\\n- **Lunch:** Packed lunch en route ($5).\\n- **Afternoon:** Arrive in Nubra Valley, check into a guesthouse or camp ($30).\\n- **Evening:** Visit **Diskit Monastery** and see the giant Buddha statue.\\n- **Dinner:** Local cuisine at your guesthouse or camp ($10).\\n\\n### Day 4: Hunder Sand Dunes\\n- **Morning:** Breakfast at your accommodation. Head to **Hunder Sand Dunes**.\\n- **Activity:** Enjoy camel rides (Bactrian camels) in the sand dunes ($15).\\n- **Lunch:** Local food at a nearby eatery ($10).\\n- **Afternoon:** Return to Diskit or explore local villages.\\n- **Evening:** Relax\\nWeather: Weather data not available.\\nFlight Price: Estimated price from Bengalutu to Ladakh: $500-$1000\\n\\nTravel Summary:\\n\"]",
+                  "output": "**Travel Summary for Ladakh Adventure Trip**\n\n- **Destination:** Ladakh\n- **Budget:** $1,000\n- **Duration:** 7 days\n\n**Itinerary Overview:**\n\n- **Day 1: Arrival in Leh**\n  - Arrive at Leh Kushok Bakula Rimpochee Airport, taxi to budget guesthouse ($20/night).\n  - Acclimatize and explore Leh Market.\n  - Dinner at a local restaurant ($10).\n\n- **Day 2: Leh Local Sightseeing**\n  - Visit Shanti Stupa and Leh Palace; lunch at a local caf\u00e9 ($10).\n  - Afternoon visit to Sankar Monastery.\n  - Dinner at a local restaurant ($10).\n\n- **Day 3: Nubra Valley Excursion**\n  - Depart for Nubra Valley via Khardung La Pass; packed lunch en route ($5).\n  - Check into a guesthouse or camp ($30).\n  - Visit Diskit Monastery in the evening; dinner ($10).\n\n- **Day 4: Hunder Sand Dunes**\n  - Camel rides in Hunder Sand Dunes ($15); lunch at a nearby eatery ($10).\n  - Return to Diskit or explore local villages; relax in the evening.\n\n**Budget Allocation:**\n- Estimated flight cost from Bengaluru to Ladakh: ~$700.\n- Remaining budget for accommodation, food, transport, and activities: ~$300.",
+                  "error": null,
+                  "children": []
+                },
+                "network_calls": [],
+                "interactions": []
+              }
+            ]
+          },
+          "network_calls": [],
+          "interactions": [
+            {
+              "id": "3a8c7355-7a37-40cd-817b-b044e708fcb9",
+              "interaction_type": "output",
+              "content": "\nTravel Summary:",
+              "timestamp": "2025-01-03T12:36:47.328217"
+            },
+            {
+              "id": "d248f497-9462-40b5-9463-b035f20c2335",
+              "interaction_type": "output",
+              "content": "**Travel Summary for Ladakh Adventure Trip**\n\n- **Destination:** Ladakh\n- **Budget:** $1,000\n- **Duration:** 7 days\n\n**Itinerary Overview:**\n\n- **Day 1: Arrival in Leh**\n  - Arrive at Leh Kushok Bakula Rimpochee Airport, taxi to budget guesthouse ($20/night).\n  - Acclimatize and explore Leh Market.\n  - Dinner at a local restaurant ($10).\n\n- **Day 2: Leh Local Sightseeing**\n  - Visit Shanti Stupa and Leh Palace; lunch at a local caf\u00e9 ($10).\n  - Afternoon visit to Sankar Monastery.\n  - Dinner at a local restaurant ($10).\n\n- **Day 3: Nubra Valley Excursion**\n  - Depart for Nubra Valley via Khardung La Pass; packed lunch en route ($5).\n  - Check into a guesthouse or camp ($30).\n  - Visit Diskit Monastery in the evening; dinner ($10).\n\n- **Day 4: Hunder Sand Dunes**\n  - Camel rides in Hunder Sand Dunes ($15); lunch at a nearby eatery ($10).\n  - Return to Diskit or explore local villages; relax in the evening.\n\n**Budget Allocation:**\n- Estimated flight cost from Bengaluru to Ladakh: ~$700.\n- Remaining budget for accommodation, food, transport, and activities: ~$300.",
+              "timestamp": "2025-01-03T12:36:47.328262"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "replays": {
+    "source": null
+  }
+}
