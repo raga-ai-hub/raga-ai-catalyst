@@ -10,6 +10,7 @@ import os
 import contextvars
 import sys
 import gc
+import pdb
 import traceback
 
 from .unique_decorator import generate_unique_hash_simple   
@@ -273,8 +274,23 @@ class LLMTracerMixin:
                 return "gemini-1.5-pro"
             if "gemini-pro" in model:
                 return "gemini-pro"
+
+        if 'to_dict' in dir(result):
+            result = result.to_dict()
+            if 'model_version' in result:
+                model = result['model_version']
         
         return model or "default"
+
+    def _extract_parameters(self, kwargs):
+        """Extract all non-null parameters from kwargs"""
+        parameters = {k: v for k, v in kwargs.items() if v is not None}
+
+        # Remove contents key in parameters
+        if 'contents' in parameters:
+            del parameters['contents']
+            
+        return parameters
 
     def _extract_token_usage(self, result):
         """Extract token usage from result"""
@@ -324,7 +340,6 @@ class LLMTracerMixin:
             "total_tokens": 0
         }
 
-
     def _extract_input_data(self, args, kwargs, result):
         return {
             'args': args,
@@ -360,8 +375,7 @@ class LLMTracerMixin:
             "total_cost": round(total_cost, 10)
         }
 
-
-    def create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, cost={}, usage={}, error=None):
+    def create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, cost={}, usage={}, error=None, parameters={}):
         # Update total metrics
         self.total_tokens += usage["total_tokens"]
         self.total_cost += cost["total_cost"]
@@ -377,11 +391,12 @@ class LLMTracerMixin:
             "error": error,
             "parent_id": self.current_agent_id.get(),
             "info": {
-                "llm_type": llm_type,
+                "model": llm_type,
                 "version": version,
                 "memory_used": memory_used,
                 "cost": cost,
-                "tokens": usage
+                "tokens": usage,
+                **parameters
             },
             "data": {
                 "input": input_data['args'] if hasattr(input_data, 'args') else input_data,
@@ -439,6 +454,7 @@ class LLMTracerMixin:
             token_usage = self._extract_token_usage(result)
             model_name = self._extract_model_name(args, kwargs, result)
             cost = self._calculate_cost(token_usage, model_name)
+            parameters = self._extract_parameters(kwargs)
 
             # End tracking network calls for this component
             self.end_component(component_id)
@@ -463,7 +479,8 @@ class LLMTracerMixin:
                 input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
-                usage=token_usage
+                usage=token_usage,
+                parameters=parameters
             )
                 
             # self.add_component(llm_component)
@@ -513,7 +530,6 @@ class LLMTracerMixin:
             return original_func(*args, **kwargs)
 
         start_time = datetime.now().astimezone()
-        start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
         hash_id = generate_unique_hash_simple(original_func)
 
@@ -528,6 +544,10 @@ class LLMTracerMixin:
         # Start tracking network calls for this component
         self.start_component(component_id)
 
+        # Calculate resource usage
+        end_time = datetime.now().astimezone()
+        start_memory = psutil.Process().memory_info().rss
+
         try:
             # Execute the function
             if asyncio.iscoroutinefunction(original_func):
@@ -535,8 +555,6 @@ class LLMTracerMixin:
             else:
                 result = original_func(*args, **kwargs)
 
-            # Calculate resource usage
-            end_time = datetime.now().astimezone()
             end_memory = psutil.Process().memory_info().rss
             memory_used = max(0, end_memory - start_memory)
 
@@ -544,6 +562,7 @@ class LLMTracerMixin:
             token_usage = self._extract_token_usage(result)
             model_name = self._extract_model_name(args, kwargs, result)
             cost = self._calculate_cost(token_usage, model_name)
+            parameters = self._extract_parameters(kwargs)
 
             # End tracking network calls for this component
             self.end_component(component_id)
@@ -568,7 +587,8 @@ class LLMTracerMixin:
                 input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
-                usage=token_usage
+                usage=token_usage,
+                parameters=parameters
             )
             
             self.add_component(llm_component)
@@ -590,6 +610,9 @@ class LLMTracerMixin:
             name = self.current_llm_call_name.get()
             if name is None:
                 name = original_func.__name__
+
+            end_memory = psutil.Process().memory_info().rss
+            memory_used = max(0, end_memory - start_memory)
             
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -597,7 +620,7 @@ class LLMTracerMixin:
                 name=name,
                 llm_type="unknown",
                 version="1.0.0",
-                memory_used=0,
+                memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
                 input_data=self._extract_input_data(args, kwargs, None),
