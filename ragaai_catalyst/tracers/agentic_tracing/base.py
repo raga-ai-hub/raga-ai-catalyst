@@ -194,9 +194,15 @@ class BaseTracer:
             #replace source code with zip_path
             self.trace.metadata.system_info.source_code = hash_id
 
-            # Save to JSON file using custom encoder
+            # # Save to JSON file using custom encoder
+            # import pdb; pdb.set_trace()
+
+            # Clean up trace_data before saving
+            trace_data = self.trace.__dict__
+            cleaned_trace_data = self._clean_trace(trace_data)
+
             with open(filepath, 'w') as f:
-                json.dump(self.trace.__dict__, f, cls=TracerJSONEncoder, indent=2)
+                json.dump(cleaned_trace_data, f, cls=TracerJSONEncoder, indent=2)
                 
             print(f"Trace saved to {filepath}")
             # Upload traces
@@ -282,6 +288,8 @@ class BaseTracer:
                         tokens[key] += value
             if span.type == "agent":
                 for children in span.data["children"]:
+                    if 'type' not in children:
+                        continue
                     if children["type"] != "llm":
                         continue
                     info = children["info"]
@@ -298,4 +306,32 @@ class BaseTracer:
                             tokens[key] += value
         trace.metadata.cost = cost
         trace.metadata.tokens = tokens
+        return trace
+
+    def _clean_trace(self, trace):
+        # Convert span to dict if it has to_dict method
+        def _to_dict_if_needed(obj):
+            if hasattr(obj, 'to_dict'):
+                return obj.to_dict()
+            return obj
+
+        # Remove any spans without hash ids
+        trace['data'][0]['spans'] = [
+            _to_dict_if_needed(span) for span in trace['data'][0]['spans'] 
+            if 'hash_id' in _to_dict_if_needed(span)
+        ]
+
+        # For spans of type agent, remove any children without hash ids upto any depth
+        for span in trace['data'][0]['spans']:
+            if span['type'] == 'agent':
+                span['data']['children'] = [
+                    _to_dict_if_needed(child) for child in span['data']['children'] 
+                    if 'hash_id' in _to_dict_if_needed(child)
+                ]
+
+                # Recursively remove any children without hash ids upto any depth
+                for child in span['data']['children']:
+                    if 'children' in child:
+                        child['children'] = self._clean_trace(child['children'])
+
         return trace
