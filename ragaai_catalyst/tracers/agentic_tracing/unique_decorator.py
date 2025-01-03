@@ -4,6 +4,7 @@ import functools
 import re
 import tokenize
 import io
+import types
 
 def normalize_source_code(source):
     """
@@ -78,6 +79,44 @@ def generate_unique_hash(func, *args, **kwargs):
     else:
         hash_input = str(func)
 
+    hash_obj = hashlib.md5(hash_input.encode('utf-8'))
+    return hash_obj.hexdigest()
+
+def generate_unique_hash_simple(func):
+    """Generate a unique hash based on the function name and normalized source code.
+    Works for both standalone functions and class methods (where self would be passed)."""
+    import hashlib
+    import inspect
+    
+    # Handle bound methods (instance methods of classes)
+    if hasattr(func, '__self__'):
+        # Get the underlying function from the bound method
+        func = func.__func__
+    
+    # Get function name
+    func_name = func.__name__
+    
+    # Get and normalize source code based on type
+    try:
+        if isinstance(func, (types.FunctionType, types.MethodType)):
+            source = inspect.getsource(func)
+            # Remove whitespace and normalize line endings
+            normalized_source = "\n".join(line.strip() for line in source.splitlines())
+        elif inspect.isclass(func):
+            source = inspect.getsource(func)
+            normalized_source = "\n".join(line.strip() for line in source.splitlines())
+        else:
+            normalized_source = str(func)
+    except (IOError, TypeError):
+        normalized_source = str(func)
+    
+    # Use fixed timestamp for reproducibility
+    timestamp = "2025-01-03T18:15:16+05:30"
+    
+    # Combine components
+    hash_input = f"{func_name}_{normalized_source}_{timestamp}"
+    
+    # Generate MD5 hash
     hash_obj = hashlib.md5(hash_input.encode('utf-8'))
     return hash_obj.hexdigest()
 
