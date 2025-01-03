@@ -386,6 +386,9 @@ class LLMTracerMixin:
             "network_calls": self.component_network_calls.get(component_id, []),
         }
 
+        if self.gt: 
+            component["data"]["gt"] = self.gt
+
         return component
     
     def start_component(self, component_id):
@@ -438,6 +441,9 @@ class LLMTracerMixin:
             if name is None:
                 name = original_func.__name__
             
+            # Create input data with ground truth
+            input_data = self._extract_input_data(args, kwargs, result)
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -448,11 +454,12 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args, kwargs, result),
+                input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
             )
+                
             if hasattr(self, "trace") and self.trace is not None:
                 llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
@@ -497,6 +504,7 @@ class LLMTracerMixin:
             raise
 
     def trace_llm_call_sync(self, original_func, *args, **kwargs):
+
         """Sync version of trace_llm_call"""
         if not self.is_active:
             if asyncio.iscoroutinefunction(original_func):
@@ -543,6 +551,9 @@ class LLMTracerMixin:
             if name is None:
                 name = original_func.__name__
 
+            # Create input data with ground truth
+            input_data = self._extract_input_data(args, kwargs, result)
+            
             # Create LLM component
             llm_component = self.create_llm_component(
                 component_id=component_id,
@@ -553,11 +564,12 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args,kwargs, result),
+                input_data=input_data,
                 output_data=extract_llm_output(result),
                 cost=cost,
                 usage=token_usage
             )
+            
             if hasattr(self, "trace") and self.trace is not None:
                 llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                 
@@ -606,6 +618,7 @@ class LLMTracerMixin:
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 if not self.is_active:
                     return await func(*args, **kwargs)
                 
@@ -664,10 +677,13 @@ class LLMTracerMixin:
                             "input": self._sanitize_input(args, kwargs),
                             "output": self._sanitize_output(result) if result else None,
                             "error": error_info["error"] if error_info else None,
-                            "children": []
+                            # "gt": kwargs.get('gt', None) if kwargs else None
                         },
                         "network_calls": self.component_network_calls.get(component_id, []),
                     }
+
+                    if self.gt: 
+                        llm_component["data"]["gt"] = self.gt
 
                     if hasattr(self, "trace") and self.trace is not None:
                         llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
@@ -684,6 +700,7 @@ class LLMTracerMixin:
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
             def sync_wrapper(*args, **kwargs):
+                self.gt = kwargs.get('gt', None) if kwargs else None
                 if not self.is_active:
                     return func(*args, **kwargs)
                 
@@ -742,10 +759,13 @@ class LLMTracerMixin:
                             "input": self._sanitize_input(args, kwargs),
                             "output": self._sanitize_output(result) if result else None,
                             "error": error_info["error"] if error_info else None,
-                            "children": []
+                            # "gt": kwargs.get('gt', None) if kwargs else None
                         },
                         "network_calls": self.component_network_calls.get(component_id, []),
                     }
+
+                    if self.gt: 
+                        llm_component["data"]["gt"] = self.gt
 
                     if hasattr(self, "trace") and self.trace is not None:
                         llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
