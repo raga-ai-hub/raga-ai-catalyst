@@ -419,7 +419,6 @@ class LLMTracerMixin:
 
         try:
             # Execute the LLM call
-            import pdb; pdb.set_trace()
             result = await original_func(*args, **kwargs)
 
             # Calculate resource usage
