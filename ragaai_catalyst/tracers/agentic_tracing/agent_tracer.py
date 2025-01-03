@@ -214,9 +214,6 @@ class AgentTracerMixin:
             # Add ground truth to component data if present
             if ground_truth is not None:
                 agent_component["data"]["gt"] = ground_truth
-
-            if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
                         
             # Add this component as a child to parent's children list
             parent_children.append(agent_component)
@@ -287,9 +284,6 @@ class AgentTracerMixin:
             # Add ground truth to component data if present
             if ground_truth is not None:
                 agent_component["data"]["gt"] = ground_truth
-
-            if hasattr(self, "trace") and self.trace is not None:
-                agent_component["interactions"] = self.trace.get_interactions(agent_component['id'])
 
             # Add this component as a child to parent's children list
             parent_children.append(agent_component)

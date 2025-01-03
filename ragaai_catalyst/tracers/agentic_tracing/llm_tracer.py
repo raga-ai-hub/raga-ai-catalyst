@@ -466,9 +466,6 @@ class LLMTracerMixin:
                 usage=token_usage
             )
                 
-            if hasattr(self, "trace") and self.trace is not None:
-                llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
-                
             # self.add_component(llm_component)
             self.llm_data = llm_component
             return result
@@ -653,9 +650,6 @@ class LLMTracerMixin:
 
                     if error_info:
                         llm_component["error"] = error_info["error"]
-             
-                    if hasattr(self, "trace") and self.trace is not None:
-                        llm_component["interactions"] = self.trace.get_interactions(llm_component['id'])
                     
                     if parent_agent_id:
                         children = self.agent_children.get()
@@ -706,9 +700,6 @@ class LLMTracerMixin:
 
                     if error_info:
                         llm_component["error"] = error_info["error"]
-
-                    # if hasattr(self, "trace") and self.trace is not None:
-                    llm_component["interactions"] = self.trace.get_interactions(component_id)
                     
                     if parent_agent_id:
                         children = self.agent_children.get()
