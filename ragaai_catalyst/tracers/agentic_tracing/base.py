@@ -263,10 +263,22 @@ class BaseTracer:
         for span in trace.data[0]["spans"]:
             if span.type == "agent":
                 childrens = span.data["children"]
-                if childrens != []:
-                    span.data["input"] = childrens[0]["data"]["input"]
-                    span.data["input"] = span.data["input"]['args'] if hasattr(span.data["input"], 'args') else span.data["input"]
-                    span.data["output"] = childrens[-1]["data"]["output"]
+                span.data["input"] = None
+                span.data["output"] = None
+                if childrens:
+                    # Find first non-null input going forward
+                    for child in childrens:
+                        input_data = child["data"].get("input")
+                        if input_data:
+                            span.data["input"] = input_data['args'] if hasattr(input_data, 'args') else input_data
+                            break
+                    
+                    # Find first non-null output going backward
+                    for child in reversed(childrens):
+                        output_data = child["data"].get("output")
+                        if output_data:
+                            span.data["output"] = output_data
+                            break
         return trace
     
     def _extract_cost_tokens(self, trace):
