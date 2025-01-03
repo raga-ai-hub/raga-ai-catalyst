@@ -65,10 +65,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
-
-        # Extract ground truth if present
-        # ground_truth = kwargs.get('gt', None) if kwargs else None
+        hash_id = generate_unique_hash_simple(func)
 
         # Start tracking network calls for this component
         self.start_component(component_id)
@@ -140,10 +137,7 @@ class ToolTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(func, *args, **kwargs)
-
-        # Extract ground truth if present
-        # ground_truth = kwargs.get('gt', None) if kwargs else None
+        hash_id = generate_unique_hash_simple(func)
 
         try:
             # Execute the tool

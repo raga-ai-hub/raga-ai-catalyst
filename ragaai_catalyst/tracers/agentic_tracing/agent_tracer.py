@@ -28,7 +28,8 @@ class AgentTracerMixin:
             # Check if target is a class
             is_class = isinstance(target, type)
             tracer = self  # Store reference to tracer instance
-            top_level_hash_id = generate_unique_hash_simple(target, name, agent_type, version, capabilities)
+            top_level_hash_id = generate_unique_hash_simple(target)   # Generate hash based on the decorated target code
+
             
             if is_class:
                 # Store original __init__
@@ -38,7 +39,7 @@ class AgentTracerMixin:
                     self.gt = kwargs.get('gt', None) if kwargs else None
                     # Set agent context before initializing
                     component_id = str(uuid.uuid4())
-                    hash_id = str(uuid.uuid4())
+                    hash_id = top_level_hash_id
                     
                     # Store the component ID in the instance
                     self._agent_component_id = component_id

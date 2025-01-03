@@ -415,7 +415,7 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(original_func, *args, **kwargs)  # Get hash_id from decorator
+        hash_id = generate_unique_hash_simple(original_func) 
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -516,7 +516,7 @@ class LLMTracerMixin:
         start_time = datetime.now().astimezone()
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
-        hash_id = generate_unique_hash_simple(original_func, *args, **kwargs)
+        hash_id = generate_unique_hash_simple(original_func)
 
         # Skip if we've already seen this hash_id
         if hash_id in self.seen_hash_ids:
@@ -618,7 +618,7 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return await func(*args, **kwargs)
                 
-                hash_id = generate_unique_hash_simple(func, *args, **kwargs)
+                hash_id = generate_unique_hash_simple(func)
                 
                 if hash_id in self.seen_hash_ids:
                     return await func(*args, **kwargs)
@@ -668,8 +668,8 @@ class LLMTracerMixin:
                 if not self.is_active:
                     return func(*args, **kwargs)
                 
-                hash_id = generate_unique_hash_simple(func, *args, **kwargs)
-                
+                hash_id = generate_unique_hash_simple(func)
+
                 if hash_id in self.seen_hash_ids:
                     return func(*args, **kwargs)
                 
