@@ -55,7 +55,7 @@ class BaseTracer:
         self.project_id = self.user_details['project_id']  # Access the project_id
         
         # Initialize trace data
-        self.trace_id = str(uuid.uuid4())
+        self.trace_id = None
         self.start_time = datetime.now().isoformat()
         self.components: List[Component] = []
         self.data_key = [{"start_time": datetime.now().isoformat(), 
@@ -152,6 +152,9 @@ class BaseTracer:
             system_info=self._get_system_info(),
             resources=self._get_resources()
         )
+
+        # Generate a unique trace ID, when trace starts
+        self.trace_id = str(uuid.uuid4()) 
         
         self.trace = Trace(
             id=self.trace_id,
