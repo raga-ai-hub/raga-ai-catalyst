@@ -289,6 +289,11 @@ class LLMTracerMixin:
         # Remove contents key in parameters
         if 'contents' in parameters:
             del parameters['contents']
+
+        if 'generation_config' in parameters:
+            generation_config = parameters['generation_config']
+            parameters.update(generation_config)
+            del parameters['generation_config']
             
         return parameters
 
