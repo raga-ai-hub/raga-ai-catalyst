@@ -275,9 +275,13 @@ class LLMTracerMixin:
         """Extract all non-null parameters from kwargs"""
         parameters = {k: v for k, v in kwargs.items() if v is not None}
 
-        # Remove contents key in parameters
+        # Remove contents key in parameters (Google LLM Response)
         if 'contents' in parameters:
             del parameters['contents']
+
+        # Remove messages key in parameters (OpenAI message)
+        if 'messages' in parameters:
+            del parameters['messages']
 
         if 'generation_config' in parameters:
             generation_config = parameters['generation_config']
