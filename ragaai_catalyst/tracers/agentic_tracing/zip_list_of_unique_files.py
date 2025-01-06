@@ -7,6 +7,8 @@ import importlib.util
 import json
 import astor
 from pathlib import Path
+import logging
+logger = logging.getLogger(__name__)
 
 # Define the PackageUsageRemover class
 class PackageUsageRemover(ast.NodeTransformer):
@@ -165,15 +167,15 @@ class TraceDependencyTracker:
                 try:
                     relative_path = os.path.relpath(filepath, base_path)
                     zipf.write(filepath, relative_path)
-                    print(f"Added to zip: {relative_path}")
+                    # logger.info(f"Added to zip: {relative_path}")
                 except Exception as e:
                     print(f"Warning: Could not add {filepath} to zip: {str(e)}")
 
         return hash_id, zip_filename
 
 # Main function for creating a zip of unique files
-def zip_list_of_unique_files(filepaths):
-    tracker = TraceDependencyTracker()
+def zip_list_of_unique_files(filepaths, output_dir):
+    tracker = TraceDependencyTracker(output_dir)
     return tracker.create_zip(filepaths)
 
 # Example usage
