@@ -230,7 +230,7 @@ class BaseTracer:
             
         # Cleanup
         self.components = []
-        self.file_tracker = TrackName()
+        self.file_tracker.reset()
                 
     def add_component(self, component: Component):
         """Add a component to the trace"""

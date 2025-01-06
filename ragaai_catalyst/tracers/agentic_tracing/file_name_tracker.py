@@ -8,13 +8,9 @@ class TrackName:
     def trace_decorator(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            # frame = inspect.stack()[1]
-            # file_name = frame.filename
             file_name = self._get_file_name()
-            # print(f"Called from file: {frame.filename}")
-            # print(f"Called from line: {frame.lineno}")
-            # print(f"Called from function: {frame.function}")
             self.files.add(file_name)
+
             return func(*args, **kwargs)
         return wrapper
 
@@ -44,3 +40,7 @@ class TrackName:
         
     def get_unique_files(self):
         return list(self.files)
+        
+    def reset(self):
+        """Reset the file tracker by clearing all tracked files."""
+        self.files.clear()
