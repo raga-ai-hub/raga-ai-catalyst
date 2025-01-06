@@ -20,6 +20,11 @@ class AgentTracerMixin:
         self.agent_children = contextvars.ContextVar("agent_children", default=[])
         self.component_network_calls = contextvars.ContextVar("component_network_calls", default={})
         self.component_user_interaction = contextvars.ContextVar("component_user_interaction", default={})
+        self.version = contextvars.ContextVar("version", default="1.0.0")
+        self.agent_type = contextvars.ContextVar("agent_type", default="generic")
+        self.capabilities = contextvars.ContextVar("capabilities", default=[])
+        self.start_time = contextvars.ContextVar("start_time", default=None)
+        self.input_data = contextvars.ContextVar("input_data", default=None)
         self.gt = None
 
 
@@ -29,7 +34,9 @@ class AgentTracerMixin:
             is_class = isinstance(target, type)
             tracer = self  # Store reference to tracer instance
             top_level_hash_id = generate_unique_hash_simple(target)   # Generate hash based on the decorated target code
-
+            self.version.set(version)
+            self.agent_type.set(agent_type)
+            self.capabilities.set(capabilities)
             
             if is_class:
                 # Store original __init__
@@ -160,6 +167,8 @@ class AgentTracerMixin:
             return func(*args, **kwargs)
 
         start_time = datetime.now()
+        self.start_time = start_time
+        self.input_data = self._sanitize_input(args, kwargs)
         start_memory = psutil.Process().memory_info().rss
         component_id = str(uuid.uuid4())
 
@@ -206,12 +215,11 @@ class AgentTracerMixin:
                 start_time=start_time,
                 end_time=end_time,
                 memory_used=memory_used,
-                input_data=self._sanitize_input(args, kwargs),
+                input_data=self.input_data,
                 output_data=self._sanitize_output(result),
                 children=children,
                 parent_id=parent_agent_id
             )
-
             # Add ground truth to component data if present
             if ground_truth is not None:
                 agent_component["data"]["gt"] = ground_truth
@@ -253,13 +261,12 @@ class AgentTracerMixin:
                 start_time=start_time,
                 end_time=datetime.now(),
                 memory_used=0,
-                input_data=self._sanitize_input(args, kwargs),
+                input_data=self.input_data,
                 output_data=None,
                 error=error_component,
                 children=children,
                 parent_id=parent_agent_id  # Add parent ID if exists
             )
-            
             # If this is a nested agent, add it to parent's children
             if parent_agent_id:
                 parent_component = self._agent_components.get(parent_agent_id)
