@@ -617,7 +617,7 @@ class LLMTracerMixin:
                 error=error_component
             )
     
-            self.add_component(llm_component)
+            self.add_component(llm_component, is_error=True)
             raise
 
     def trace_llm(self, name: str = None):
