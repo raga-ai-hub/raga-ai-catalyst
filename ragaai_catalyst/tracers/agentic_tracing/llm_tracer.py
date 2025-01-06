@@ -621,6 +621,7 @@ class LLMTracerMixin:
             raise
 
     def trace_llm(self, name: str = None):
+        self.current_llm_call_name.set(name)
         def decorator(func):
             @self.file_tracker.trace_decorator
             @functools.wraps(func)
@@ -634,7 +635,6 @@ class LLMTracerMixin:
                 parent_agent_id = self.current_agent_id.get()
                 self.start_component(component_id)
                 
-                start_time = datetime.now()
                 error_info = None
                 result = None
                 
