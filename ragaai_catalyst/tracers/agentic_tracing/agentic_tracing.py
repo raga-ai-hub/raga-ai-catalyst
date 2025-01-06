@@ -112,6 +112,7 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
             
             # Cleanup
             self.unpatch_llm_calls()
+            self.user_interaction_tracer.interactions = []  # Clear interactions list
             self.is_active = False
 
 

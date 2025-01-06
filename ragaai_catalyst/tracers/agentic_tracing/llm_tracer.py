@@ -654,6 +654,10 @@ class LLMTracerMixin:
                 finally:
 
                     llm_component = self.llm_data
+                    llm_component['name'] = name
+
+                    if self.gt:
+                        llm_component["data"]["gt"] = self.gt
 
                     if error_info:
                         llm_component["error"] = error_info["error"]
