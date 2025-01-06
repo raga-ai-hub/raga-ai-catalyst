@@ -28,7 +28,7 @@ class AgentTracerMixin:
         self.gt = None
 
 
-    def trace_agent(self, name: str, agent_type: str = "generic", version: str = "1.0.0", capabilities: List[str] = None):
+    def trace_agent(self, name: str, agent_type: str = None, version: str = None, capabilities: List[str] = None):
         def decorator(target):
             # Check if target is a class
             is_class = isinstance(target, type)
