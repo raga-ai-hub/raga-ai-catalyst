@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List
 import uuid
 import sys
+import tempfile
 
 from .data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
@@ -178,14 +179,13 @@ class BaseTracer:
             self.trace = self._extract_cost_tokens(self.trace)
             
             # Create traces directory if it doesn't exist
-            self.traces_dir = Path("traces")
-            self.traces_dir.mkdir(exist_ok=True)
+            self.traces_dir = tempfile.gettempdir()
             filename = self.trace.id + ".json"
-            filepath = self.traces_dir / filename
+            filepath = f"{self.traces_dir}/{filename}"
 
             #get unique files and zip it. Generate a unique hash ID for the contents of the files
             list_of_unique_files = self.file_tracker.get_unique_files()
-            hash_id, zip_path = zip_list_of_unique_files(list_of_unique_files)
+            hash_id, zip_path = zip_list_of_unique_files(list_of_unique_files, output_dir=self.traces_dir)
 
             #replace source code with zip_path
             self.trace.metadata.system_info.source_code = hash_id
