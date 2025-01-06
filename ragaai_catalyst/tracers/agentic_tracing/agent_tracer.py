@@ -225,6 +225,52 @@ class AgentTracerMixin:
                 self.add_component(agent_component)
 
             return result
+        except Exception as e:
+            error_component = {
+                "code": 500,
+                "type": type(e).__name__,
+                "message": str(e),
+                "details": {}
+            }
+            
+            # Get children even in case of error
+            children = self.agent_children.get()
+            
+            # Set parent_id for all children
+            for child in children:
+                child["parent_id"] = component_id
+            
+            # End tracking network calls for this component
+            self.end_component(component_id)
+            
+            agent_component = self.create_agent_component(
+                component_id=component_id,
+                hash_id=hash_id,
+                name=name,
+                agent_type=agent_type,
+                version=version,
+                capabilities=capabilities or [],
+                start_time=start_time,
+                end_time=datetime.now(),
+                memory_used=0,
+                input_data=self._sanitize_input(args, kwargs),
+                output_data=None,
+                error=error_component,
+                children=children,
+                parent_id=parent_agent_id  # Add parent ID if exists
+            )
+            
+            # If this is a nested agent, add it to parent's children
+            if parent_agent_id:
+                parent_component = self._agent_components.get(parent_agent_id)
+                if parent_component:
+                    if 'children' not in parent_component['data']:
+                        parent_component['data']['children'] = []
+                    parent_component['data']['children'].append(agent_component)
+            else:
+                # Only add to root components if no parent
+                self.add_component(agent_component)
+            raise
         finally:
             self.current_agent_id.reset(agent_token)
             self.current_agent_name.reset(agent_name_token)
