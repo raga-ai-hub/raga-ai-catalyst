@@ -162,7 +162,6 @@ class ToolInfo:
 class Component:
     def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None, error: Optional[Dict[str, Any]] = None):
         self.id = id
-        self.error = error
         self.hash_id = hash_id
         self.type = type
         self.name = name
@@ -174,6 +173,7 @@ class Component:
         self.error = error
         self.network_calls = network_calls or []
         self.interactions = []
+        self.error = error
         if interactions:
             for interaction in interactions:
                 if isinstance(interaction, dict):
@@ -200,6 +200,7 @@ class Component:
             "info": self.info,
             "error": self.error,
             "data": self.data,
+            "error": self.error,
             "network_calls": [call.to_dict() if hasattr(call, 'to_dict') else call for call in self.network_calls],
             "interactions": self.interactions
         }

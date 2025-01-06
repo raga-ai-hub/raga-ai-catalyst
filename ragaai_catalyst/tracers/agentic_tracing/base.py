@@ -1,12 +1,11 @@
 import json
 import os
 import platform
-import re
 import psutil
 import pkg_resources
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import List
 import uuid
 import sys
 import tempfile
@@ -15,14 +14,11 @@ from .data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
     Resources, CPUResource, MemoryResource, DiskResource, NetworkResource,
     ResourceInfo, MemoryInfo, DiskInfo, NetworkInfo,
-    Component, LLMComponent, AgentComponent, ToolComponent,
-    NetworkCall, Interaction, Error
+    Component, 
 )
 
-from ..upload_traces import UploadTraces
 from .upload_agentic_traces import UploadAgenticTraces
 from .upload_code import upload_code
-from ...ragaai_catalyst import RagaAICatalyst
 
 from .file_name_tracker import TrackName
 from .zip_list_of_unique_files import zip_list_of_unique_files

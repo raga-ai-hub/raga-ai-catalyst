@@ -168,10 +168,11 @@ class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMix
         """Add a component to the trace data"""
         # Convert dict to appropriate Component type
         filtered_data = {k: v for k, v in component_data.items() if k in ["id", "hash_id", "type", "name", "start_time", "end_time", "parent_id", "info", "data", "network_calls", "interactions", "error"]}
+
                
         if component_data["type"] == "llm":
             component = LLMComponent(**filtered_data)
-        elif component_data["type"] == "agent":
+        elif component_data["type"] == "agent": 
             component = AgentComponent(**filtered_data)
         elif component_data["type"] == "tool":
             component = ToolComponent(**filtered_data)
