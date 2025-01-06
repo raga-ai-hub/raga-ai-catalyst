@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "ragaai_catalyst"
 description = "RAGA AI CATALYST"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 # license = {file = "LICENSE"}
-version = "2.1.beta.3"
+version = "2.1.beta.4"
 authors = [
     {name = "Kiran Scaria", email = "kiran.scaria@raga.ai"},
     {name = "Kedar Gaikwad", email = "kedar.gaikwad@raga.ai"},
@@ -41,13 +41,13 @@ dependencies = [
     "litellm==1.51.1",  
     "tenacity==8.3.0",
     "tqdm>=4.66.5",
-    "llama-index==0.10.0",
-    "pyopenssl==24.2.1",
+    "llama-index>=0.10.0",
+    "pyopenssl>=24.2.1",
     "psutil~=6.0.0",
     "py-cpuinfo~=9.0.0",
     "requests~=2.32.3",
     "GPUtil~=1.4.0",
-    "astor==0.8.1",
+    "astor>=0.8.1",
 ]
 
 [project.optional-dependencies]
