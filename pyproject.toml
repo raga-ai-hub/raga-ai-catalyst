@@ -41,7 +41,7 @@ dependencies = [
     "litellm==1.51.1",  
     "tenacity==8.3.0",
     "tqdm>=4.66.5",
-    "llama-index==0.10.0",
+    "llama-index~=0.10",
     "pyopenssl==24.2.1",
     "psutil~=6.0.0",
     "py-cpuinfo~=9.0.0",
