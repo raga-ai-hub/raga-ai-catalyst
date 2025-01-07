@@ -16,14 +16,14 @@ import openai
 from openai import AsyncOpenAI
 
 catalyst = RagaAICatalyst(
-    access_key="mp4NjrgFqjavNti38Uh4",
-    secret_key="9OC0ZIiVZQRA4sYsb4025cfUbRPD3s5RTl3iho2U",
-    base_url="https://llm-dev5.ragaai.ai/api"
+    access_key="access_key",
+    secret_key="secret_key",
+    base_url="base_url"
 )
 # Initialize tracer
 tracer = Tracer(
-    project_name="testing_fraz",
-    dataset_name="ChatOpenAI_tan",
+    project_name="project_name",
+    dataset_name="dataset_name",
     tracer_type="anything",
     metadata={
         "model": "gpt-3.5-turbo",
