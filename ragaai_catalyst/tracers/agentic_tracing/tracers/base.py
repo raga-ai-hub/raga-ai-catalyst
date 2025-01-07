@@ -10,18 +10,17 @@ import uuid
 import sys
 import tempfile
 
-from .data_structure import (
+from ..data.data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
     Resources, CPUResource, MemoryResource, DiskResource, NetworkResource,
     ResourceInfo, MemoryInfo, DiskInfo, NetworkInfo,
     Component, 
 )
 
-from .upload_agentic_traces import UploadAgenticTraces
-from .upload_code import upload_code
-
-from .file_name_tracker import TrackName
-from .zip_list_of_unique_files import zip_list_of_unique_files
+from ..upload.upload_agentic_traces import UploadAgenticTraces
+from ..upload.upload_code import upload_code
+from ..utils.file_name_tracker import TrackName
+from ..utils.zip_list_of_unique_files import zip_list_of_unique_files
 
 class TracerJSONEncoder(json.JSONEncoder):
     def default(self, obj):

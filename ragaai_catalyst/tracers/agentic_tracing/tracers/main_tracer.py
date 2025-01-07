@@ -14,7 +14,7 @@ from .agent_tracer import AgentTracerMixin
 from .network_tracer import NetworkTracer
 from .user_interaction_tracer import UserInteractionTracer
 
-from .data_structure import (
+from ..data.data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
     Resources, CPUResource, MemoryResource, DiskResource, NetworkResource,
     ResourceInfo, MemoryInfo, DiskInfo, NetworkInfo,
@@ -22,9 +22,8 @@ from .data_structure import (
     NetworkCall, Interaction, Error
 )
 
-
-from ...ragaai_catalyst import RagaAICatalyst
-from ..upload_traces import UploadTraces
+from ....ragaai_catalyst import RagaAICatalyst
+from ragaai_catalyst.tracers.upload_traces import UploadTraces
 
 class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMixin):
     def __init__(self, user_detail, auto_instrument_llm: bool = True):

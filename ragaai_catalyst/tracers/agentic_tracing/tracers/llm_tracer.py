@@ -3,15 +3,28 @@ import asyncio
 import psutil
 import wrapt
 import functools
+import json
+import os
+import time
 from datetime import datetime
 import uuid
 import contextvars
 import traceback
 
-from .unique_decorator import generate_unique_hash_simple   
-from .utils.trace_utils import load_model_costs
-from .utils.llm_utils import extract_llm_output
-from .file_name_tracker import TrackName
+from ..data.data_classes import LLMCall
+from ..utils.llm_utils import (
+    extract_model_name,
+    extract_parameters,
+    extract_token_usage,
+    extract_input_data,
+    calculate_llm_cost,
+    sanitize_api_keys,
+    sanitize_input,
+    extract_llm_output,
+)
+from ..utils.trace_utils import load_model_costs
+from ..utils.unique_decorator import generate_unique_hash_simple   
+from ..utils.file_name_tracker import TrackName
 
 
 class LLMTracerMixin:
@@ -237,148 +250,6 @@ class LLMTracerMixin:
             setattr(obj, method_name, wrapped_method)
             self.patches.append((obj, method_name, original_method))
 
-    def _extract_model_name(self, args, kwargs, result):
-        """Extract model name from kwargs or result"""
-        # First try direct model parameter
-        model = kwargs.get("model", "")
-        
-        if not model:
-            # Try to get from instance
-            instance = kwargs.get("self", None)
-            if instance:
-                # Try model_name first (Google format)
-                if hasattr(instance, "model_name"):
-                    model = instance.model_name
-                # Try model attribute
-                elif hasattr(instance, "model"):
-                    model = instance.model
-        
-        # TODO: This way isn't scalable. The necessity for normalising model names needs to be fixed. We shouldn't have to do this
-        # Normalize Google model names
-        if model and isinstance(model, str):
-            model = model.lower()
-            if "gemini-1.5-flash" in model:
-                return "gemini-1.5-flash"
-            if "gemini-1.5-pro" in model:
-                return "gemini-1.5-pro"
-            if "gemini-pro" in model:
-                return "gemini-pro"
-
-        if 'to_dict' in dir(result):
-            result = result.to_dict()
-            if 'model_version' in result:
-                model = result['model_version']
-        
-        return model or "default"
-
-    def _extract_parameters(self, kwargs):
-        """Extract all non-null parameters from kwargs"""
-        parameters = {k: v for k, v in kwargs.items() if v is not None}
-
-        # Remove contents key in parameters (Google LLM Response)
-        if 'contents' in parameters:
-            del parameters['contents']
-
-        # Remove messages key in parameters (OpenAI message)
-        if 'messages' in parameters:
-            del parameters['messages']
-
-        if 'generation_config' in parameters:
-            generation_config = parameters['generation_config']
-            # If generation_config is already a dict, use it directly
-            if isinstance(generation_config, dict):
-                config_dict = generation_config
-            else:
-                # Convert GenerationConfig to dictionary if it has a to_dict method, otherwise try to get its __dict__
-                config_dict = getattr(generation_config, 'to_dict', lambda: generation_config.__dict__)()
-            parameters.update(config_dict)
-            del parameters['generation_config']
-            
-        return parameters
-
-    def _extract_token_usage(self, result):
-        """Extract token usage from result"""
-        # Handle coroutines
-        if asyncio.iscoroutine(result):
-            # Get the current event loop
-            loop = asyncio.get_event_loop()
-            # Run the coroutine in the current event loop
-            result = loop.run_until_complete(result)
-
-
-        # Handle standard OpenAI/Anthropic format
-        if hasattr(result, "usage"):
-            usage = result.usage
-            return {
-                "prompt_tokens": getattr(usage, "prompt_tokens", 0),
-                "completion_tokens": getattr(usage, "completion_tokens", 0),
-                "total_tokens": getattr(usage, "total_tokens", 0)
-            }
-        
-        # Handle Google GenerativeAI format with usage_metadata
-        if hasattr(result, "usage_metadata"):
-            metadata = result.usage_metadata
-            return {
-                "prompt_tokens": getattr(metadata, "prompt_token_count", 0),
-                "completion_tokens": getattr(metadata, "candidates_token_count", 0),
-                "total_tokens": getattr(metadata, "total_token_count", 0)
-            }
-        
-        # Handle Vertex AI format
-        if hasattr(result, "text"):
-            # For LangChain ChatVertexAI
-            total_tokens = getattr(result, "token_count", 0)
-            if not total_tokens and hasattr(result, "_raw_response"):
-                # Try to get from raw response
-                total_tokens = getattr(result._raw_response, "token_count", 0)
-            return {
-                # TODO: This implementation is incorrect. Vertex AI does provide this breakdown    
-                "prompt_tokens": 0,  # Vertex AI doesn't provide this breakdown
-                "completion_tokens": total_tokens,
-                "total_tokens": total_tokens
-            }
-        
-        return {    # TODO: Passing 0 in case of not recorded is not correct. This needs to be fixes. Discuss before making changes to this
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0
-        }
-
-    def _extract_input_data(self, args, kwargs, result):
-        return {
-            'args': args,
-            'kwargs': kwargs
-        }
-
-    def _calculate_cost(self, token_usage, model_name):
-        # TODO: Passing default cost is a faulty logic & implementation and should be fixed
-        """Calculate cost based on token usage and model"""
-        if not isinstance(token_usage, dict):
-            token_usage = {
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": token_usage if isinstance(token_usage, (int, float)) else 0
-            }
-
-        # TODO: This is a temporary fix. This needs to be fixed
-
-        # Get model costs, defaulting to Vertex AI PaLM2 costs if unknown
-        model_cost = self.model_costs.get(model_name, {
-            "input_cost_per_token": 0.0,   
-            "output_cost_per_token": 0.0   
-        })
-
-        input_cost = (token_usage.get("prompt_tokens", 0)) * model_cost.get("input_cost_per_token", 0.0)
-        output_cost = (token_usage.get("completion_tokens", 0)) * model_cost.get("output_cost_per_token", 0.0)
-        total_cost = input_cost + output_cost
-
-        # TODO: Return the value as it is, no need to round
-        return {
-            "input_cost": round(input_cost, 10),
-            "output_cost": round(output_cost, 10),
-            "total_cost": round(total_cost, 10)
-        }
-
     def create_llm_component(self, component_id, hash_id, name, llm_type, version, memory_used, start_time, end_time, input_data, output_data, cost={}, usage={}, error=None, parameters={}):
         # Update total metrics
         self.total_tokens += usage.get("total_tokens", 0)
@@ -449,10 +320,11 @@ class LLMTracerMixin:
             memory_used = max(0, end_memory - start_memory)
 
             # Extract token usage and calculate cost
-            token_usage = self._extract_token_usage(result)
-            model_name = self._extract_model_name(args, kwargs, result)
-            cost = self._calculate_cost(token_usage, model_name)
-            parameters = self._extract_parameters(kwargs)
+            model_name = extract_model_name(args, kwargs, result)
+            token_usage = extract_token_usage(result)
+            cost = calculate_llm_cost(token_usage, model_name, self.model_costs)
+            parameters = extract_parameters(kwargs)
+            input_data = extract_input_data(args, kwargs, result)
 
             # End tracking network calls for this component
             self.end_component(component_id)
@@ -460,9 +332,6 @@ class LLMTracerMixin:
             name = self.current_llm_call_name.get()
             if name is None:
                 name = original_func.__name__
-            
-            # Create input data with ground truth
-            input_data = self._extract_input_data(args, kwargs, result)
             
             # Create LLM component
             llm_component = self.create_llm_component(
@@ -511,7 +380,7 @@ class LLMTracerMixin:
                 memory_used=0,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args, kwargs, None),
+                input_data=extract_input_data(args, kwargs, None),
                 output_data=None,
                 error=error_component
             )
@@ -548,10 +417,11 @@ class LLMTracerMixin:
             memory_used = max(0, end_memory - start_memory)
 
             # Extract token usage and calculate cost
-            token_usage = self._extract_token_usage(result)
-            model_name = self._extract_model_name(args, kwargs, result)
-            cost = self._calculate_cost(token_usage, model_name)
-            parameters = self._extract_parameters(kwargs)
+            model_name = extract_model_name(args, kwargs, result)
+            token_usage = extract_token_usage(result)
+            cost = calculate_llm_cost(token_usage, model_name, self.model_costs)
+            parameters = extract_parameters(kwargs)
+            input_data = extract_input_data(args, kwargs, result)
 
             # End tracking network calls for this component
             self.end_component(component_id)
@@ -559,9 +429,6 @@ class LLMTracerMixin:
             name = self.current_llm_call_name.get()
             if name is None:
                 name = original_func.__name__
-
-            # Create input data with ground truth
-            input_data = self._extract_input_data(args, kwargs, result)
             
             # Create LLM component
             llm_component = self.create_llm_component(
@@ -612,7 +479,7 @@ class LLMTracerMixin:
                 memory_used=memory_used,
                 start_time=start_time,
                 end_time=end_time,
-                input_data=self._extract_input_data(args, kwargs, None),
+                input_data=extract_input_data(args, kwargs, None),
                 output_data=None,
                 error=error_component
             )
@@ -728,85 +595,3 @@ class LLMTracerMixin:
             except Exception as e:
                 print(f"Error unpatching {method_name}: {str(e)}")
         self.patches = []
-
-    def _sanitize_api_keys(self, data):
-        """Remove sensitive information from data"""
-        if isinstance(data, dict):
-            return {k: self._sanitize_api_keys(v) for k, v in data.items() 
-                    if not any(sensitive in k.lower() for sensitive in ['key', 'token', 'secret', 'password'])}
-        elif isinstance(data, list):
-            return [self._sanitize_api_keys(item) for item in data]
-        elif isinstance(data, tuple):
-            return tuple(self._sanitize_api_keys(item) for item in data)
-        return data
-
-    def _sanitize_input(self, args, kwargs):
-        """Convert input arguments to text format.
-        
-        Args:
-            args: Input arguments that may contain nested dictionaries
-            
-        Returns:
-            str: Text representation of the input arguments
-        """
-        if isinstance(args, dict):
-            return str({k: self._sanitize_input(v, {}) for k, v in args.items()})
-        elif isinstance(args, (list, tuple)):
-            return str([self._sanitize_input(item, {}) for item in args])
-        return str(args)
-
-def extract_llm_output(result):
-    """Extract output from LLM response"""
-    class OutputResponse:
-        def __init__(self, output_response):
-            self.output_response = output_response
-
-    # Handle coroutines
-    if asyncio.iscoroutine(result):
-        # For sync context, run the coroutine
-        if not asyncio.get_event_loop().is_running():
-            result = asyncio.run(result)
-        else:
-            # We're in an async context, but this function is called synchronously
-            # Return a placeholder and let the caller handle the coroutine
-            return OutputResponse("Coroutine result pending")
-
-    # Handle Google GenerativeAI format
-    if hasattr(result, "result"):
-        candidates = getattr(result.result, "candidates", [])
-        output = []
-        for candidate in candidates:
-            content = getattr(candidate, "content", None)
-            if content and hasattr(content, "parts"):
-                for part in content.parts:
-                    if hasattr(part, "text"):
-                        output.append({
-                            "content": part.text,
-                            "role": getattr(content, "role", "assistant"),
-                            "finish_reason": getattr(candidate, "finish_reason", None)
-                        })
-        return OutputResponse(output)
-    
-    # Handle Vertex AI format
-    if hasattr(result, "text"):
-        return OutputResponse([{
-            "content": result.text,
-            "role": "assistant"
-        }])
-    
-    # Handle OpenAI format
-    if hasattr(result, "choices"):
-        return OutputResponse([{
-            "content": choice.message.content,
-            "role": choice.message.role
-        } for choice in result.choices])
-    
-    # Handle Anthropic format
-    if hasattr(result, "completion"):
-        return OutputResponse([{
-            "content": result.completion,
-            "role": "assistant"
-        }])
-    
-    # Default case
-    return OutputResponse(str(result))

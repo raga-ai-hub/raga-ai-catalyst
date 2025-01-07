@@ -9,19 +9,18 @@ from concurrent.futures import ThreadPoolExecutor
 
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from .exporters.file_span_exporter import FileSpanExporter
-from .exporters.raga_exporter import RagaExporter
-from .instrumentators import (
+from ragaai_catalyst.tracers.exporters.file_span_exporter import FileSpanExporter
+from ragaai_catalyst.tracers.exporters.raga_exporter import RagaExporter
+from ragaai_catalyst.tracers.instrumentators import (
     LangchainInstrumentor,
     OpenAIInstrumentor,
     LlamaIndexInstrumentor,
 )
-from .utils import get_unique_key
-# from .llamaindex_callback import LlamaIndexTracer
-from ..ragaai_catalyst import RagaAICatalyst
-from .agentic_tracing.agentic_tracing import AgenticTracing
-from .agentic_tracing.file_name_tracker import TrackName
-from .agentic_tracing.llm_tracer import LLMTracerMixin
+from ragaai_catalyst.tracers.utils import get_unique_key
+# from ragaai_catalyst.tracers.llamaindex_callback import LlamaIndexTracer
+from ragaai_catalyst import RagaAICatalyst
+from ragaai_catalyst.tracers.agentic_tracing import AgenticTracing, TrackName
+from ragaai_catalyst.tracers.agentic_tracing.tracers.llm_tracer import LLMTracerMixin
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +113,7 @@ class Tracer(AgenticTracing):
             self._upload_task = None
         elif tracer_type == "llamaindex":
             self._upload_task = None
-            from .llamaindex_callback import LlamaIndexTracer
+            from ragaai_catalyst.tracers.llamaindex_callback import LlamaIndexTracer
 
         else:
             self._upload_task = None
@@ -176,7 +175,7 @@ class Tracer(AgenticTracing):
             print(f"Tracer started for project: {self.project_name}")
             return self
         elif self.tracer_type == "llamaindex":
-            from .llamaindex_callback import LlamaIndexTracer
+            from ragaai_catalyst.tracers.llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer(self._pass_user_data()).start()
         else:
             super().start()
@@ -194,7 +193,7 @@ class Tracer(AgenticTracing):
             self._upload_task = self._run_async(self._upload_traces())
             return "Trace upload initiated. Use get_upload_status() to check the status."
         elif self.tracer_type == "llamaindex":
-            from .llamaindex_callback import LlamaIndexTracer
+            from ragaai_catalyst.tracers.llamaindex_callback import LlamaIndexTracer
             return LlamaIndexTracer(self._pass_user_data()).stop()
         else:
             super().stop()
