@@ -520,7 +520,8 @@ class LLMTracerMixin:
                 finally:
 
                     llm_component = self.llm_data
-                    llm_component['name'] = name
+                    if (name is not None) or (name != ""):
+                        llm_component['name'] = name 
 
                     if self.gt:
                         llm_component["data"]["gt"] = self.gt
@@ -570,6 +571,8 @@ class LLMTracerMixin:
                 finally:
 
                     llm_component = self.llm_data
+                    if (name is not None) or (name != ""):
+                        llm_component['name'] = name 
 
                     if error_info:
                         llm_component["error"] = error_info["error"]
