@@ -445,7 +445,7 @@ class LLMTracerMixin:
                 usage=token_usage,
                 parameters=parameters
             )
-            
+            self.llm_data = llm_component
             self.add_component(llm_component)
             return result
 
@@ -482,7 +482,7 @@ class LLMTracerMixin:
                 output_data=None,
                 error=error_component
             )
-    
+            self.llm_data = llm_component
             self.add_component(llm_component, is_error=True)
             raise
 
