@@ -10,9 +10,9 @@ import openai
 from openai import OpenAI
 
 catalyst = RagaAICatalyst(
-    access_key="saLy6KmMVlfAzunuQGS9",
-    secret_key="lm39fd4KXffM6gzLjnY9G7QReffhH4RGZPursp3A",
-    base_url="http://52.172.168.127/api"
+    access_key="access_key",
+    secret_key="secret_key",
+    base_url="base_url"
 )
 # Initialize tracer
 tracer = Tracer(

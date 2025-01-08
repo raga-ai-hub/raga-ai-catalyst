@@ -11,7 +11,6 @@ import uuid
 import contextvars
 import traceback
 
-from ..data.data_classes import LLMCall
 from ..utils.llm_utils import (
     extract_model_name,
     extract_parameters,

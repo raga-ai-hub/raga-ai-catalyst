@@ -15,16 +15,16 @@ from groq import Groq, AsyncGroq
 
 # Initialize providers
 catalyst = RagaAICatalyst(
-    access_key="saLy6KmMVlfAzunuQGS9",
-    secret_key="lm39fd4KXffM6gzLjnY9G7QReffhH4RGZPursp3A",
-    base_url="http://52.172.168.127/api"
+    access_key="access_key",
+    secret_key="secret_key",
+    base_url="base_url"
 )
 
 # Initialize tracer
 tracer = Tracer(
-    project_name="cost_testing",
-    dataset_name="sync_sample_llm_testing_openai",
-    tracer_type="anything",
+    project_name="project_name",
+    dataset_name="dataset_name",
+    tracer_type="tracer_type",
     metadata={
         "model": "gpt-3.5-turbo",
         "environment": "production"

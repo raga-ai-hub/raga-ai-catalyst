@@ -24,7 +24,7 @@ catalyst = RagaAICatalyst(
 tracer = Tracer(
     project_name="project_name",
     dataset_name="dataset_name",
-    tracer_type="anything",
+    tracer_type="tracer_type",
     metadata={
         "model": "gpt-3.5-turbo",
         "environment": "production"

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 import uuid
@@ -158,6 +158,19 @@ class ToolInfo:
     tool_type: str
     version: str
     memory_used: int
+
+@dataclass
+class LLMCall:
+    name: str
+    model_name: str
+    input_prompt: str
+    output_response: str
+    tool_call: Dict
+    token_usage: Dict[str, int]
+    cost: Dict[str, float]
+    start_time: float = field(default=0)
+    end_time: float = field(default=0)
+    duration: float = field(default=0)
 
 class Component:
     def __init__(self, id: str, hash_id: str, type: str, name: str, start_time: str, end_time: str, parent_id: int, info: Dict[str, Any], data: Dict[str, Any], network_calls: Optional[List[NetworkCall]] = None, interactions: Optional[List[Union[Interaction, Dict]]] = None, error: Optional[Dict[str, Any]] = None):

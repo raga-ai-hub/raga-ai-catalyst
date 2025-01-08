@@ -1,4 +1,4 @@
-from ..data.data_classes import LLMCall
+from ..data.data_structure import LLMCall
 from .trace_utils import (
     calculate_cost,
     convert_usage_to_dict,
