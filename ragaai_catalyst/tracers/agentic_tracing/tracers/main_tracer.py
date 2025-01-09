@@ -13,6 +13,7 @@ from .tool_tracer import ToolTracerMixin
 from .agent_tracer import AgentTracerMixin
 from .network_tracer import NetworkTracer
 from .user_interaction_tracer import UserInteractionTracer
+from .custom_tracer import CustomTracerMixin
 
 from ..data.data_structure import (
     Trace, Metadata, SystemInfo, OSInfo, EnvironmentInfo,
@@ -25,13 +26,14 @@ from ..data.data_structure import (
 from ....ragaai_catalyst import RagaAICatalyst
 from ragaai_catalyst.tracers.upload_traces import UploadTraces
 
-class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMixin):
+class AgenticTracing(BaseTracer, LLMTracerMixin, ToolTracerMixin, AgentTracerMixin, CustomTracerMixin):
     def __init__(self, user_detail, auto_instrument_llm: bool = True):
         # Initialize all parent classes
         self.user_interaction_tracer = UserInteractionTracer()
         LLMTracerMixin.__init__(self)
         ToolTracerMixin.__init__(self)
         AgentTracerMixin.__init__(self)
+        CustomTracerMixin.__init__(self)
         
         self.project_name = user_detail["project_name"]
         self.project_id = user_detail["project_id"]
