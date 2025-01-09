@@ -57,7 +57,6 @@ def litellm_azure_llm_call(prompt, model="azure/gpt-4o-mini"):
 
 def main():
     try:
-        # Test call to the Azure OpenAI model
         response = litellm_azure_llm_call(
             prompt="Tell me a joke"
         )

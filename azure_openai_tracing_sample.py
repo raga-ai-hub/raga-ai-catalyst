@@ -51,7 +51,6 @@ def azure_llm_call(prompt, max_tokens=512, model="gpt-4o-mini", deployment_name=
     print(f"Max Tokens: {max_tokens}")
     print(f"Model: {model}")
     print(f"Deployment: {deployment_name}")
-    # input("Press Enter to continue...")
 
     try:
         # Azure OpenAI call
@@ -74,7 +73,6 @@ def azure_llm_call(prompt, max_tokens=512, model="gpt-4o-mini", deployment_name=
 
 def main():
     try:
-        # Test call to the Azure OpenAI model
         response = azure_llm_call(
             prompt="How does Azure OpenAI Service integrate with other Azure products?"
         )
