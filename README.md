@@ -1,5 +1,11 @@
 # RagaAI Catalyst
 
+> **📢 Important Update!** This version of RagaAI Catalyst has been superseded by a new and improved version.  
+> Please install the latest version: `pip install --upgrade ragaai-catalyst`
+> 
+> Learn more about the improvements at: https://github.com/raga-ai-hub/ragaai-catalyst
+
+
 RagaAI Catalyst is a comprehensive platform designed to enhance the management and optimization of LLM projects. It offers a wide range of features, including project management, dataset management, evaluation management, trace management, prompt management, synthetic data generation, and guardrail management. These functionalities enable you to efficiently evaluate, and safeguard your LLM applications.
 
 ## Table of Contents
